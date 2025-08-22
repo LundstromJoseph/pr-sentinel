@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "pull-ping",
+  "productName": "PullPing",
   "version": "0.1.0",
   "identifier": "se.uniem.pull-ping",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "pull-ping",
+        "title": "Pull Ping",
         "width": 800,
         "height": 600
       }

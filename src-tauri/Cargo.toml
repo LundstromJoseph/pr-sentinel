@@ -1,5 +1,5 @@
 [package]
-name = "pull-ping"
+name = "PullPing"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
