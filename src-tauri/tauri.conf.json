@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "PullPing",
+  "productName": "Preview",
   "version": "0.1.0",
-  "identifier": "se.uniem.pull-ping",
+  "identifier": "se.uniem.preview",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "Pull Ping",
-        "width": 800,
-        "height": 600
+        "title": "PReview",
+        "width": 1024,
+        "height": 768
       }
     ],
     "security": {

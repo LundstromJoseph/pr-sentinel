@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/* Custom component classes using @apply */
+@layer components {
+  .text-default-colors {
+    @apply text-gray-900 dark:text-white;
+  }
+
+  .text-error-colors {
+    @apply text-red-900 dark:text-red-400;
+  }
+
+  .border-default-colors {
+    @apply border-gray-900 dark:border-gray-700;
+  }
+}
