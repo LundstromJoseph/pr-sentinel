@@ -72,9 +72,9 @@
   class="grid grid-cols-[minmax(12rem,1fr)_6fr] grid-rows-1 w-full h-full flex-1"
 >
   <aside
-    class="flex flex-col overflow-y-auto min-h-0 border-r border-default-colors"
+    class="flex flex-col overflow-y-auto min-h-0 border-r border-border-default"
   >
-    <div class="flex justify-end gap-2 p-2 border-b border-default-colors">
+    <div class="flex justify-end gap-2 p-2 border-b border-border-default">
       <SubtleButton
         selected={screen === "settings"}
         onClick={() => (screen = "settings")}
@@ -99,7 +99,7 @@
     <menu class="flex flex-col">
       {#each filtersWithData as item}
         <ListButton
-          classes="border-b rounded-none border-default-colors flex flex-col flex-start"
+          classes="border-b rounded-none border-border-default flex flex-col flex-start"
           onClick={() => (screen = item)}
         >
           <div class="flex justify-between w-full">
