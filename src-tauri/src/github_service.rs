@@ -61,7 +61,7 @@ impl GithubClient {
             .header("Authorization", format!("Bearer {}", self.token))
             .header("Accept", "application/vnd.github.v3+json")
             .header("X-GitHub-Api-Version", "2022-11-28")
-            .header("User-Agent", "rust-be-preview")
+            .header("User-Agent", "pr-sentinel")
             .send() // This actually sends the request
             .await?; // Handle potential errors
 

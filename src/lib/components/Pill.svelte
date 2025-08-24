@@ -8,6 +8,8 @@
   let { children }: Props = $props();
 </script>
 
-<span class="px-2 py-1 rounded-full text-sm font-medium bg-gray-800 text-white">
+<div
+  class="px-4 py-2 rounded-full text-sm font-medium bg-gray-800 text-white w-fit"
+>
   {@render children()}
-</span>
+</div>

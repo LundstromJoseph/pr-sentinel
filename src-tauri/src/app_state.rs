@@ -1,4 +1,5 @@
 use anyhow::Result;
+use fractional_index::FractionalIndex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -37,10 +38,11 @@ pub struct GithubFilter {
     pub query: String,
     pub notify: bool,
     pub name: String,
+    pub fractional_index: FractionalIndex,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GithubFilterCreate {
+pub struct GithubFilterUpdate {
     pub query: String,
     pub notify: bool,
     pub name: String,
@@ -117,7 +119,11 @@ pub async fn new_pull_request_response(
 #[tauri::command]
 pub async fn get_config(state: tauri::State<'_, AppState>) -> Result<AppConfig, String> {
     let config = state.config.lock().await;
-    Ok(config.clone())
+
+    Ok(AppConfig {
+        filters: config.filters.clone(),
+        github_token: config.github_token.clone(),
+    })
 }
 
 #[tauri::command]
@@ -127,8 +133,140 @@ pub async fn get_data(state: tauri::State<'_, AppState>) -> Result<AppData, Stri
 }
 
 #[tauri::command]
+pub async fn update_filter(
+    id: Uuid,
+    filter: GithubFilterUpdate,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    if filter.query.is_empty() {
+        return Err("Query cannot be empty".to_string());
+    }
+    if filter.name.is_empty() {
+        return Err("Name cannot be empty".to_string());
+    }
+
+    let state = app_handle.state::<AppState>();
+    {
+        let read_config = state.config.lock().await.clone();
+        let current_filter = read_config.filters.iter().find(|r| r.id == id);
+        if current_filter.is_none() {
+            return Err("Filter not found".to_string());
+        }
+
+        let current_filter = current_filter.unwrap();
+
+        let mut config = state.config.lock().await;
+        config.filters.retain(|r| r.id != id);
+        config.filters.push(GithubFilter {
+            id: id,
+            query: filter.query,
+            notify: filter.notify,
+            name: filter.name,
+            fractional_index: current_filter.fractional_index.clone(),
+        });
+        config
+            .filters
+            .sort_by_key(|r| r.fractional_index.to_string());
+    }
+    app_handle
+        .emit(
+            EventNames::APP_CONFIG_UPDATED,
+            AppConfigUpdatedPayload {
+                config: state.config.lock().await.clone(),
+            },
+        )
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to emit app data updated event: {}", e);
+        });
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reorder_filter(
+    filter_id: Uuid,
+    direction: String,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    if direction != "up" && direction != "down" {
+        return Err("Invalid direction".to_string());
+    }
+
+    let state = app_handle.state::<AppState>();
+    {
+        let mut config = state.config.lock().await;
+        if config.filters.len() <= 1 {
+            return Ok(());
+        }
+
+        config.filters.sort_by_key(|r| r.fractional_index.clone());
+        let index = config
+            .filters
+            .iter()
+            .position(|r| r.id == filter_id)
+            .unwrap();
+        if index == 0 && direction == "up" {
+            return Ok(());
+        }
+        if index == config.filters.len() - 1 && direction == "down" {
+            return Ok(());
+        }
+
+        if direction == "up" {
+            let before = if index >= 2 {
+                config.filters.get(index - 2)
+            } else {
+                None
+            };
+            let after = if index >= 1 {
+                config.filters.get(index - 1)
+            } else {
+                None
+            };
+            config.filters[index].fractional_index = fractional_index::FractionalIndex::new(
+                before.map(|r| &r.fractional_index),
+                after.map(|r| &r.fractional_index),
+            )
+            .unwrap();
+        } else {
+            let before = if index + 1 < config.filters.len() {
+                config.filters.get(index + 1)
+            } else {
+                None
+            };
+            let after = if index + 2 < config.filters.len() {
+                config.filters.get(index + 2)
+            } else {
+                None
+            };
+            config.filters[index].fractional_index = fractional_index::FractionalIndex::new(
+                before.map(|r| &r.fractional_index),
+                after.map(|r| &r.fractional_index),
+            )
+            .unwrap();
+        }
+
+        config
+            .filters
+            .sort_by_key(|r| r.fractional_index.to_string());
+    }
+
+    app_handle
+        .emit(
+            EventNames::APP_CONFIG_UPDATED,
+            AppConfigUpdatedPayload {
+                config: state.config.lock().await.clone(),
+            },
+        )
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to emit app data updated event: {}", e);
+        });
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn add_filter(
-    filter: GithubFilterCreate,
+    filter: GithubFilterUpdate,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     if filter.query.is_empty() {
@@ -141,11 +279,13 @@ pub async fn add_filter(
     let state = app_handle.state::<AppState>();
     {
         let mut config = state.config.lock().await;
+        let last_index = config.filters.last().unwrap().fractional_index.clone();
         config.filters.push(GithubFilter {
             id: Uuid::new_v4(),
             query: filter.query,
             notify: filter.notify,
             name: filter.name,
+            fractional_index: FractionalIndex::new_after(&last_index),
         });
     }
     app_handle

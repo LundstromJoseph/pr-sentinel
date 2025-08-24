@@ -6,7 +6,6 @@ mod github_service;
 mod notifications;
 mod polling;
 
-// Re-export the types we need from config module
 pub use app_state::{AppConfig, AppState};
 pub use file_storage::{load_config, load_data};
 
@@ -22,7 +21,9 @@ pub fn run() {
             app_state::get_config,
             app_state::get_data,
             app_state::add_filter,
+            app_state::update_filter,
             app_state::remove_filter,
+            app_state::reorder_filter,
             verify_token,
             app_state::save_token,
             polling::refresh,

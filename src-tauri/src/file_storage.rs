@@ -11,7 +11,7 @@ fn get_config_path() -> PathBuf {
     let config_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Could not find home directory"))
         .unwrap()
-        .join(".preview_app");
+        .join(".pr_sentinel");
 
     config_dir.join("config.json")
 }
@@ -20,7 +20,7 @@ fn get_data_path() -> PathBuf {
     let config_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Could not find home directory"))
         .unwrap()
-        .join(".preview_app");
+        .join(".pr_sentinel");
 
     config_dir.join("data.json")
 }
@@ -37,9 +37,8 @@ async fn save_config(config: AppConfig) {
 
 pub async fn load_config() -> Result<AppConfig, String> {
     let config_path = get_config_path();
-    println!("Config path: {:?}", config_path);
     if !config_path.exists() {
-        println!("Config path does not exist");
+        eprintln!("Config path does not exist");
         return Ok(AppConfig {
             github_token: None,
             filters: Vec::new(),
@@ -47,8 +46,10 @@ pub async fn load_config() -> Result<AppConfig, String> {
     }
 
     let content = std::fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-    println!("Content: {:?}", content);
-    let config: AppConfig = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    let mut config: AppConfig = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    config
+        .filters
+        .sort_by_key(|r| r.fractional_index.to_string());
     Ok(config)
 }
 

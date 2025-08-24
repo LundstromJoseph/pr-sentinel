@@ -10,5 +10,7 @@
   let { appState }: Props = $props();
 </script>
 
-<Typography variant="h3">Settings</Typography>
-<GithubTokenInput {appState} />
+<section class="p-4 flex flex-col gap-6">
+  <Typography variant="h3">Settings</Typography>
+  <GithubTokenInput {appState} />
+</section>

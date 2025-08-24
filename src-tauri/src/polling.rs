@@ -34,7 +34,7 @@ pub async fn refresh_all_filters(app_handle: AppHandle) {
     };
 
     let Some(ok_token) = github_token else {
-        println!("No github token found");
+        eprintln!("No github token found");
         return;
     };
 
