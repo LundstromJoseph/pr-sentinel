@@ -8,7 +8,7 @@
 </script>
 
 <svg
-  class="fill-default-text"
+  class="fill-text-default"
   {width}
   {height}
   viewBox="0 0 93.5 93.5"

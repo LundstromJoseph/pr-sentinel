@@ -1,5 +1,5 @@
 [package]
-name = "PRSentinel"
+name = "pr_sentinel"
 version = "0.1.0"
 description = "Manage your PR filters in your desktop"
 authors = ["you"]

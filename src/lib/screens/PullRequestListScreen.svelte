@@ -12,6 +12,7 @@
   import Pen from "$lib/icons/Pen.svelte";
   import UpArrow from "$lib/icons/UpArrow.svelte";
   import DownArrow from "$lib/icons/DownArrow.svelte";
+  import Bell from "$lib/icons/Bell.svelte";
 
   interface Props {
     data: PullRequestsData;
@@ -59,6 +60,9 @@
       <div class="flex gap-2 items-center justify-between">
         <div class="flex gap-2 items-center">
           <Typography component="h5">{filter.name}</Typography>
+          {#if filter.notify}
+            <Bell />
+          {/if}
           <SubtleButton onClick={() => openGithub(filter.query)}>
             <Link />
           </SubtleButton>

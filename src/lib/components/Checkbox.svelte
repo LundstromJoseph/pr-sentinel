@@ -5,5 +5,5 @@
 
 <div class="flex items-center gap-1">
   <input type="checkbox" bind:checked={value} id={label} />
-  <label class="text-default-text" for={label}>{label}</label>
+  <label class="text-text-default" for={label}>{label}</label>
 </div>

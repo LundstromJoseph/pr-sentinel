@@ -33,9 +33,9 @@
   };
 
   const colors = {
-    default: "text-default-text",
+    default: "text-text-default",
     subtle: "text-text-subtle",
-    error: "text-error-text",
+    error: "text-text-error",
   };
 
   const sizeClass = $derived(size ? sizes[size] : defaultSizes[component]);

@@ -6,8 +6,8 @@
   }
 
   const colorClasses = {
-    default: "stroke-default-text",
-    subtle: "stroke-subtle-text",
+    default: "stroke-text-default",
+    subtle: "stroke-text-subtle",
   };
 
   let { width = 24, height = 24, color = "default" }: Props = $props();

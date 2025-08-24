@@ -25,13 +25,21 @@
     },
     set value(value: boolean) {
       if (value) {
-        enable().then(() => {
-          isRunOnStartupEnabled = true;
-        });
+        enable()
+          .then(() => {
+            isRunOnStartupEnabled = true;
+          })
+          .catch((e) => {
+            console.error(e);
+          });
       } else {
-        disable().then(() => {
-          isRunOnStartupEnabled = false;
-        });
+        disable()
+          .then(() => {
+            isRunOnStartupEnabled = false;
+          })
+          .catch((e) => {
+            console.error(e);
+          });
       }
     },
   };

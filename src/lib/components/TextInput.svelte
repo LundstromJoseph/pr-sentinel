@@ -12,8 +12,8 @@
   }: Props = $props();
 
   const colors = {
-    default: "text-default-text",
-    error: "text-error-text",
+    default: "text-text-default",
+    error: "text-text-error",
   };
 
   let textColorClass = $derived(colors[textColor]);
@@ -21,7 +21,7 @@
 
 <input
   type="text"
-  class="border-b w-full {textColorClass} border-default-border focus:border-button-primary p-2 outline-none"
+  class="border-b w-full {textColorClass} border-border-default focus:border-button-primary p-2 outline-none"
   {placeholder}
   bind:value
 />

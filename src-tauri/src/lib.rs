@@ -8,13 +8,19 @@ mod polling;
 
 pub use app_state::{AppConfig, AppState};
 pub use file_storage::{load_config, load_data};
+use tauri_plugin_autostart::MacosLauncher;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let state = AppState::new().expect("Failed to initialize app state");
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(
+            tauri_plugin_autostart::Builder::new()
+                .app_name("PR Sentinel")
+                .macos_launcher(MacosLauncher::AppleScript)
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .manage(state)

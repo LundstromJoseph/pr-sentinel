@@ -7,10 +7,10 @@
   let { width = 24, height = 24 }: Props = $props();
 </script>
 
-<svg class="fill-default-text" {width} {height} viewBox="0 0 24 24" fill="none">
+<svg class="fill-text-default" {width} {height} viewBox="0 0 24 24" fill="none">
   <path
     d="M4 12H20M12 4V20"
-    class="stroke-default-text"
+    class="stroke-text-default"
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"

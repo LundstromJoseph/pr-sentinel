@@ -9,7 +9,7 @@
 
   const colorClasses = {
     neutral: "fill-text-subtle",
-    default: "fill-default-text",
+    default: "fill-text-default",
   };
 
   let colorClass = $derived(colorClasses[color]);

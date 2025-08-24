@@ -6,8 +6,8 @@
   }
 
   const colorClasses = {
-    default: "fill-default-text",
-    error: "fill-error-text",
+    default: "fill-text-default",
+    error: "fill-text-error",
   };
 
   let { width = 24, height = 24, color = "default" }: Props = $props();

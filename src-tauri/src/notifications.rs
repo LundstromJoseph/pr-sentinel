@@ -17,6 +17,10 @@ pub fn init_listeners(app_handle: tauri::AppHandle) {
 fn notify_new_pull_requests(payload: FilterDataUpdatedPayload, app_handle: tauri::AppHandle) {
     let filter = payload.filter;
 
+    if !filter.notify {
+        return;
+    }
+
     let not_seen_prs: Vec<PullRequestItem> = match payload.old_data {
         Some(old_prs) => payload
             .new_data

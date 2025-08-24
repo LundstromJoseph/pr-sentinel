@@ -3,12 +3,13 @@
 
 
 @theme {
-  --color-default-bg: var(--color-gray-900);
-  --color-default-text: var(--color-white);
-  --color-default-border: var(--color-gray-700);
+  --color-bg-default: var(--color-gray-900);
+  --color-border-default: var(--color-gray-700);
   --color-border-strong: var(--color-gray-300);
-  --color-error-text: var(--color-red-400);
-  --color-button-subtle: var(--color-gray-800);
+  --color-text-default: var(--color-white);
+  --color-text-error: var(--color-red-400);
   --color-text-subtle: var(--color-gray-500);
   --color-button-primary: var(--color-blue-800);
+  --color-button-subtle: var(--color-gray-800);
+
 }

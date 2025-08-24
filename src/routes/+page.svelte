@@ -35,7 +35,7 @@
   });
 </script>
 
-<main class="h-screen bg-default-bg flex flex-col">
+<main class="h-screen bg-bg-default flex flex-col">
   {#await data.state}
     <Typography component="h1">Loading...</Typography>
   {:then appState}
