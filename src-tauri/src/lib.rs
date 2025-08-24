@@ -14,13 +14,19 @@ use tauri_plugin_autostart::MacosLauncher;
 pub fn run() {
     let state = AppState::new().expect("Failed to initialize app state");
 
-    tauri::Builder::default()
-        .plugin(
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.plugin(
             tauri_plugin_autostart::Builder::new()
                 .app_name("PR Sentinel")
                 .macos_launcher(MacosLauncher::AppleScript)
                 .build(),
         )
+    }
+
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .manage(state)
