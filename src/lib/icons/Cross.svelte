@@ -2,14 +2,21 @@
   interface Props {
     width?: number;
     height?: number;
-    color?: string;
+    color?: "default" | "error";
   }
 
-  let { width = 24, height = 24, color = "white" }: Props = $props();
+  const colorClasses = {
+    default: "fill-default-text",
+    error: "fill-error-text",
+  };
+
+  let { width = 24, height = 24, color = "default" }: Props = $props();
+
+  const colorClass = $derived(colorClasses[color]);
 </script>
 
 <svg
-  fill={color}
+  class={colorClass}
   {width}
   {height}
   viewBox="0 0 32 32"

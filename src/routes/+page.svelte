@@ -35,9 +35,9 @@
   });
 </script>
 
-<main class="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+<main class="h-screen bg-default-bg flex flex-col">
   {#await data.state}
-    <Typography variant="h1">Loading...</Typography>
+    <Typography component="h1">Loading...</Typography>
   {:then appState}
     {#if appState.config.github_token}
       <MainScreen {appState} />

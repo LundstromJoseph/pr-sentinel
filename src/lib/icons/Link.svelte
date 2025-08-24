@@ -2,14 +2,13 @@
   interface Props {
     width?: number;
     height?: number;
-    color?: string;
   }
 
-  let { width = 16, height = 16, color = "white" }: Props = $props();
+  let { width = 16, height = 16 }: Props = $props();
 </script>
 
 <svg
-  fill={color}
+  class="fill-default-text"
   {width}
   {height}
   viewBox="0 0 16 16"

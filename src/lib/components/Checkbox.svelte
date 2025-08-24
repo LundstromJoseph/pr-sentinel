@@ -3,5 +3,7 @@
     $props();
 </script>
 
-<input type="checkbox" bind:checked={value} id={label} />
-<label class="text-default-colors" for={label}>{label}</label>
+<div class="flex items-center gap-1">
+  <input type="checkbox" bind:checked={value} id={label} />
+  <label class="text-default-text" for={label}>{label}</label>
+</div>

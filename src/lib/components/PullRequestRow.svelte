@@ -37,10 +37,10 @@
         alt={pullRequest.user.login}
         class="w-10 h-10 rounded-full"
       />
-      <Typography variant="p">{pullRequest.title}</Typography>
+      <Typography>{pullRequest.title}</Typography>
     </div>
-    <Typography variant="small">{repositoryName}</Typography>
-    <Typography variant="small" classes="text-gray-500">
+    <Typography size="sm">{repositoryName}</Typography>
+    <Typography size="sm" color="subtle">
       {updatedAt}
     </Typography>
   </div>

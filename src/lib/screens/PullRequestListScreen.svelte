@@ -21,6 +21,12 @@
 
   let editingFilter = $state(false);
 
+  $effect(() => {
+    if (filter) {
+      editingFilter = false;
+    }
+  });
+
   let { data, filter, close }: Props = $props();
 
   async function deleteFilter() {
@@ -49,10 +55,10 @@
   {#if editingFilter}
     <EditFilterScreen {filter} onclose={() => (editingFilter = false)} />
   {:else}
-    <header class="border-b border-gray-300 flex flex-col gap-4 pb-4 px-2">
+    <header class="border-b border-border-strong flex flex-col gap-4 pb-4 px-2">
       <div class="flex gap-2 items-center justify-between">
         <div class="flex gap-2 items-center">
-          <Typography variant="h5">{filter.name}</Typography>
+          <Typography component="h5">{filter.name}</Typography>
           <SubtleButton onClick={() => openGithub(filter.query)}>
             <Link />
           </SubtleButton>
@@ -68,7 +74,7 @@
             <Pen />
           </SubtleButton>
           <SubtleButton onClick={deleteFilter}>
-            <Cross color="red" />
+            <Cross color="error" />
           </SubtleButton>
         </div>
       </div>

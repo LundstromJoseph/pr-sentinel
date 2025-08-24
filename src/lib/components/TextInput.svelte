@@ -11,14 +11,17 @@
     textColor = "default",
   }: Props = $props();
 
-  let textColorClass = $derived(
-    textColor === "error" ? "text-error-colors" : "text-default-colors"
-  );
+  const colors = {
+    default: "text-default-text",
+    error: "text-error-text",
+  };
+
+  let textColorClass = $derived(colors[textColor]);
 </script>
 
 <input
   type="text"
-  class="border-b w-full {textColorClass} border-blue-900 focus:border-blue-600 p-2 outline-none"
+  class="border-b w-full {textColorClass} border-default-border focus:border-button-primary p-2 outline-none"
   {placeholder}
   bind:value
 />

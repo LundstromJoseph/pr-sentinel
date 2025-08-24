@@ -83,7 +83,7 @@
       </SubtleButton>
       <SubtleButton onClick={refresh}>
         {#if refreshing}
-          <Refresh color="gray" />
+          <Refresh color="subtle" />
         {:else}
           <Refresh />
         {/if}
@@ -103,20 +103,14 @@
           onClick={() => (screen = item)}
         >
           <div class="flex justify-between w-full">
-            <Typography
-              variant="p"
-              classes={isSelected(item.filter) ? "" : "text-gray-400"}
-            >
+            <Typography color={isSelected(item.filter) ? "default" : "subtle"}>
               {item.filter.name}
             </Typography>
-            <Typography
-              variant="p"
-              classes={isSelected(item.filter) ? "" : "text-gray-400"}
-            >
+            <Typography color={isSelected(item.filter) ? "default" : "subtle"}>
               {item.data.pull_requests.length}
             </Typography>
           </div>
-          <Typography variant="small" classes="text-gray-500">
+          <Typography size="sm" color="subtle">
             {formatDate(item.data.last_updated)}
           </Typography>
         </ListButton>
@@ -136,7 +130,7 @@
       />
     {:else}
       <div class="flex flex-col gap-2 items-center justify-center h-full">
-        <Typography variant="h5">Pick a category to the left</Typography>
+        <Typography component="h5">Pick a filter to the left</Typography>
         <Tray width={200} height={200} color="neutral" />
       </div>
     {/if}

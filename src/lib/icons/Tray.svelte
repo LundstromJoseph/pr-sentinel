@@ -7,11 +7,12 @@
 
   let { width = 24, height = 24, color = "default" }: Props = $props();
 
-  let colorClass = $derived(
-    color === "neutral"
-      ? "dark:fill-gray-500 fill-gray-400"
-      : "dark:fill-white fill-black"
-  );
+  const colorClasses = {
+    neutral: "fill-text-subtle",
+    default: "fill-default-text",
+  };
+
+  let colorClass = $derived(colorClasses[color]);
 </script>
 
 <svg class={colorClass} {width} {height} viewBox="0 0 24 24">

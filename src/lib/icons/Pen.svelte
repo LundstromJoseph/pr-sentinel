@@ -1,19 +1,12 @@
 <script lang="ts">
   interface Props {
-    color?: string;
     size?: number;
   }
 
-  let { color = "white", size = 24 }: Props = $props();
+  let { size = 24 }: Props = $props();
 </script>
 
-<svg
-  width={size}
-  height={size}
-  viewBox="0 0 24 24"
-  fill={color}
-  xmlns="http://www.w3.org/2000/svg"
->
+<svg width={size} height={size} viewBox="0 0 24 24" class="fill-default-text">
   <path
     fill-rule="evenodd"
     clip-rule="evenodd"

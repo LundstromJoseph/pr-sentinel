@@ -50,7 +50,7 @@
 </script>
 
 <section class="flex flex-col gap-2 p-2">
-  <Typography variant="h5">GitHub token</Typography>
+  <Typography component="h5">GitHub token</Typography>
   <TextInput
     bind:value={token}
     placeholder="ghp_xxxxx"
@@ -64,9 +64,7 @@
         classes="w-20"
         enabled={["dirty", "unverified"].includes(tokenStatus)}
       >
-        <Typography variant="p">
-          {"Verify"}
-        </Typography>
+        <Typography>{"Verify"}</Typography>
       </Button>
 
       <Button
@@ -74,7 +72,7 @@
         classes="w-20"
         enabled={["verified"].includes(tokenStatus)}
       >
-        <Typography variant="p">
+        <Typography>
           {"Save"}
         </Typography>
       </Button>
@@ -86,12 +84,12 @@
   {/if}
 
   {#if tokenStatus === "unverified"}
-    <Typography variant="p" color="error">Invalid token</Typography>
+    <Typography color="error">Invalid token</Typography>
   {/if}
   {#if tokenStatus === "verified"}
-    <Typography variant="p">Token verified for {verifiedUsername}</Typography>
+    <Typography>Token verified for {verifiedUsername}</Typography>
   {/if}
   {#if tokenStatus === "saved"}
-    <Typography variant="p">Token for {verifiedUsername} is saved</Typography>
+    <Typography>Token for {verifiedUsername} is saved</Typography>
   {/if}
 </section>

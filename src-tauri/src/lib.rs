@@ -14,6 +14,7 @@ pub fn run() {
     let state = AppState::new().expect("Failed to initialize app state");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .manage(state)
