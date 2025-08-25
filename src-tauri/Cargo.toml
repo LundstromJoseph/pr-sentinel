@@ -1,6 +1,6 @@
 [package]
 name = "pr_sentinel"
-version = "0.2.0"
+version = "0.3.0"
 description = "Manage your PR filters in your desktop"
 authors = ["you"]
 edition = "2021"
