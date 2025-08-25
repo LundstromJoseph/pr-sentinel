@@ -14,20 +14,24 @@
   import PullRequestListScreen from "./PullRequestListScreen.svelte";
   import SettingsScreen from "./SettingsScreen.svelte";
 
+  type Screen =
+    | {
+        name: "new" | "settings";
+      }
+    | {
+        name: "filter";
+        id: string;
+      };
+
   interface Props {
     appState: AppState;
   }
-
-  type FilterWithData = {
-    filter: GithubFilter;
-    data: PullRequestsData;
-  };
 
   let { appState }: Props = $props();
 
   let refreshing = $state(false);
 
-  let screen = $state<"new" | "settings" | FilterWithData | null>(null);
+  let screen = $state<Screen | null>(null);
 
   function close() {
     screen = null;
@@ -55,9 +59,21 @@
     });
   });
 
+  let selectedFilter = $derived.by(() => {
+    return filtersWithData.find((item) => {
+      if (screen?.name === "filter") {
+        return item.filter.id === screen.id;
+      }
+      return false;
+    });
+  });
+
   function isSelected(filter: GithubFilter) {
     return (
-      screen && typeof screen === "object" && screen.filter.id === filter.id
+      screen &&
+      typeof screen === "object" &&
+      screen.name === "filter" &&
+      screen.id === filter.id
     );
   }
 
@@ -76,8 +92,8 @@
   >
     <div class="flex justify-end gap-2 p-2 border-b border-border-default">
       <SubtleButton
-        selected={screen === "settings"}
-        onClick={() => (screen = "settings")}
+        selected={screen?.name === "settings"}
+        onClick={() => (screen = { name: "settings" })}
       >
         <Cogwheel />
       </SubtleButton>
@@ -90,8 +106,8 @@
       </SubtleButton>
       <div class="grow"></div>
       <SubtleButton
-        selected={screen === "new"}
-        onClick={() => (screen = "new")}
+        selected={screen?.name === "new"}
+        onClick={() => (screen = { name: "new" })}
       >
         <Plus />
       </SubtleButton>
@@ -100,7 +116,7 @@
       {#each filtersWithData as item}
         <ListButton
           classes="border-b rounded-none border-border-default flex flex-col flex-start"
-          onClick={() => (screen = item)}
+          onClick={() => (screen = { name: "filter", id: item.filter.id })}
         >
           <div class="flex justify-between w-full">
             <Typography color={isSelected(item.filter) ? "default" : "subtle"}>
@@ -118,14 +134,14 @@
     </menu>
   </aside>
   <section class="flex flex-col gap-2 p-2">
-    {#if screen === "new"}
+    {#if screen?.name === "new"}
       <AddFilterScreen />
-    {:else if screen === "settings"}
+    {:else if screen?.name === "settings"}
       <SettingsScreen {appState} />
-    {:else if screen}
+    {:else if selectedFilter}
       <PullRequestListScreen
-        data={screen.data}
-        filter={screen.filter}
+        data={selectedFilter.data}
+        filter={selectedFilter.filter}
         {close}
       />
     {:else}
