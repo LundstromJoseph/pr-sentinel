@@ -135,7 +135,7 @@
   </aside>
   <section class="flex flex-col gap-2 p-2">
     {#if screen?.name === "new"}
-      <AddFilterScreen />
+      <AddFilterScreen {close} />
     {:else if screen?.name === "settings"}
       <SettingsScreen {appState} />
     {:else if selectedFilter}

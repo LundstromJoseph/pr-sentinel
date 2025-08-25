@@ -11,7 +11,7 @@
 </script>
 
 <section class="flex w-full flex-col gap-6 p-2 justify-center items-center">
-  <Typography variant="h3">No GitHub token found, please add one</Typography>
+  <Typography component="h3">No GitHub token found, please add one</Typography>
 
   <div class="w-full">
     <GithubTokenInput {appState} />

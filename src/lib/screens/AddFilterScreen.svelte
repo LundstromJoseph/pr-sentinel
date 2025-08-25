@@ -5,6 +5,12 @@
   import Typography from "$lib/components/Typography.svelte";
   import { invoke } from "@tauri-apps/api/core";
 
+  interface Props {
+    close: () => void;
+  }
+
+  let { close }: Props = $props();
+
   let filterName = $state("");
   let filterQuery = $state("");
   let notify = $state(false);
@@ -13,27 +19,31 @@
   async function handleSubmit(event: Event) {
     event.preventDefault();
     error = null;
-    let result = await invoke("add_filter", {
+    await invoke("add_filter", {
       filter: {
         name: filterName,
         query: filterQuery,
         notify: notify,
       },
-    }).catch((err) => {
-      error = err;
-    });
+    })
+      .catch((err) => {
+        error = err;
+      })
+      .then(() => {
+        close();
+      });
   }
 </script>
 
 <section class="p-4 flex flex-col gap-6">
-  <Typography variant="h3">Add filter</Typography>
+  <Typography component="h3">Add filter</Typography>
   <form onsubmit={handleSubmit} class="flex flex-col gap-4">
     <div class="flex flex-col">
-      <Typography variant="p">Filter name</Typography>
+      <Typography component="p">Filter name</Typography>
       <TextInput bind:value={filterName} />
     </div>
     <div class="flex flex-col">
-      <Typography variant="p">Filter query</Typography>
+      <Typography component="p">Filter query</Typography>
       <TextInput bind:value={filterQuery} />
     </div>
     <div class="flex gap-2 items-center">
@@ -42,6 +52,6 @@
     <Button>Add filter</Button>
   </form>
   {#if error}
-    <Typography variant="p" color="error">{error}</Typography>
+    <Typography component="p" color="error">{error}</Typography>
   {/if}
 </section>
