@@ -1,11 +1,39 @@
-# Tauri + SvelteKit + TypeScript
+# PR Sentinel
 
-This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
+A desktop application to manage and monitor your GitHub pull requests with customizable filters.
 
-## Recommended IDE Setup
+## Prerequisites
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+- [Rust](https://www.rust-lang.org/tools/install) (2021 edition)
+- [Node Version Manager (nvm)](https://github.com/nvm-sh/nvm)
+- [Node.js](https://nodejs.org/) (installed via nvm)
 
-Icon
+## Quick Start
 
-https://icon.kitchen/i/H4sIAAAAAAAAAz2QwU7DMAyG38Vce2gHFVKvO3BFYjeEJqdx0oi0KWkymKa9O7bH8CX2F%2F%2B%2FLV%2FghLHSBsMFLObPw0QzwVBypQac38ewYi7yuxE%2FYMlhjQUaCGNaGGSa04mOmeyRzgRXUR3OK3vA%2BCdWRD8iL7RJbe4tPqMNtNzYy73gaWOKKXfc8dBqcIOinaCda1t8ZoSLj2zz1OvYV7Q2LF7kJa0wdH0DOfiJDSU1qZQ03%2FJITinrDFpPe%2FEW60fXd6bXlf%2BZ09AV3ybUvbevGvLIs9lgTrZGueA7fJOBj%2BsvoEPtKFQBAAA%3D
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/pr-sentinel.git
+cd pr-sentinel
+```
+
+2. Set up the Node.js environment and install dependencies:
+
+```bash
+nvm use
+npm install
+```
+
+3. Start the development environment:
+
+```bash
+npm run tauri dev
+```
+
+## Development
+
+This project uses:
+
+- [Tauri](https://tauri.app/) for the desktop application framework
+- [SvelteKit](https://kit.svelte.dev/) for the frontend
+- [TailwindCSS](https://tailwindcss.com/) for styling
