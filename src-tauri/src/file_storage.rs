@@ -27,11 +27,21 @@ fn get_data_path() -> PathBuf {
 
 async fn save_data(data: AppData) {
     let data_path = get_data_path();
+    if !data_path.exists() {
+        let parent_dir = data_path.parent().unwrap();
+        std::fs::create_dir_all(parent_dir).unwrap();
+    }
+
     std::fs::write(data_path, serde_json::to_string(&data).unwrap()).unwrap();
 }
 
 async fn save_config(config: AppConfig) {
     let config_path = get_config_path();
+    if !config_path.exists() {
+        let parent_dir = config_path.parent().unwrap();
+        std::fs::create_dir_all(parent_dir).unwrap();
+    }
+
     std::fs::write(config_path, serde_json::to_string(&config).unwrap()).unwrap();
 }
 

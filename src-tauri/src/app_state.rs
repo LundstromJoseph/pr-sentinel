@@ -279,7 +279,11 @@ pub async fn add_filter(
     let state = app_handle.state::<AppState>();
     {
         let mut config = state.config.lock().await;
-        let last_index = config.filters.last().unwrap().fractional_index.clone();
+        let last_index = config
+            .filters
+            .last()
+            .map(|r| r.fractional_index.clone())
+            .unwrap_or(FractionalIndex::default());
         config.filters.push(GithubFilter {
             id: Uuid::new_v4(),
             query: filter.query,
