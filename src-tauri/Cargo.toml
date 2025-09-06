@@ -1,6 +1,6 @@
 [package]
 name = "pr_sentinel"
-version = "0.4.0"
+version = "0.5.0"
 description = "Manage your PR filters in your desktop"
 authors = ["you"]
 edition = "2021"
@@ -11,7 +11,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "pull_ping_lib"
+name = "pr_sentinel_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -28,6 +28,7 @@ dirs = "5.0"
 anyhow = "1.0"
 reqwest = { version = "0.12", features = ["json"] }
 fractional_index = "2.0.2"
+octocrab = "0.44.1"
 [dependencies.uuid]
 version = "1.18.0"
 # Lets you generate random UUIDs

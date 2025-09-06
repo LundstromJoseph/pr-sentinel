@@ -28,9 +28,9 @@ pub async fn refresh_all_filters(app_handle: AppHandle) {
         .try_state::<AppState>()
         .expect("Failed to get app state");
 
-    let (filters, github_token) = {
+    let github_token = {
         let config = state.config.lock().await;
-        (config.filters.clone(), config.github_token.clone())
+        config.github_token.clone()
     };
 
     let Some(ok_token) = github_token else {
@@ -40,26 +40,26 @@ pub async fn refresh_all_filters(app_handle: AppHandle) {
 
     let client = GithubClient::new(ok_token);
 
-    for filter in filters {
-        match client.search_pull_requests(filter.query.clone()).await {
-            Ok(response) => {
-                app_state::new_pull_request_response(app_handle.clone(), filter, response).await;
-            }
-            Err(e) => {
-                // Emit error event
-                app_handle
-                    .emit(
-                        EventNames::POLLING_ERROR,
-                        serde_json::json!({
-                            "filter_id": filter.id,
-                            "filter_name": filter.name,
-                            "error": e.to_string()
-                        }),
-                    )
-                    .unwrap_or_else(|e| {
-                        eprintln!("Failed to emit error event: {}", e);
-                    });
-            }
+    match client
+        .search_pull_requests("is:pr is:open involves:@me draft:false".to_string())
+        .await
+    {
+        Ok(response) => {
+            app_state::new_pull_request_response(app_handle.clone(), response).await;
+        }
+        Err(e) => {
+            eprintln!("Error polling pull requests: {}", e);
+            // Emit error event
+            app_handle
+                .emit(
+                    EventNames::POLLING_ERROR,
+                    serde_json::json!({
+                        "error": e.to_string()
+                    }),
+                )
+                .unwrap_or_else(|e| {
+                    eprintln!("Failed to emit error event: {}", e);
+                });
         }
     }
 }

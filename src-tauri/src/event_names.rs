@@ -1,8 +1,9 @@
 use crate::{
-    app_state::{AppData, GithubFilter, PullRequestsData},
+    app_data::{AppData, PullRequestsData},
     AppConfig,
 };
 use serde::{Deserialize, Serialize};
+
 use uuid::Uuid;
 
 // Event name constants
@@ -22,9 +23,8 @@ pub struct AppDataUpdatedPayload {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FilterDataUpdatedPayload {
-    pub filter: GithubFilter,
     pub new_data: PullRequestsData,
-    pub old_data: Option<PullRequestsData>,
+    pub old_data: PullRequestsData,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfigUpdatedPayload {

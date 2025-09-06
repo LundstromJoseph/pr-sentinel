@@ -21,7 +21,7 @@
   );
 
   function handleClick() {
-    openUrl(pullRequest.pull_request.html_url);
+    openUrl(pullRequest.html_url);
   }
 
   let repositoryName = $derived(
@@ -33,8 +33,8 @@
   <div class="flex flex-col gap-2 justify-start items-start text-start">
     <div class="flex flex-row gap-2 items-center">
       <img
-        src={pullRequest.user.avatar_url}
-        alt={pullRequest.user.login}
+        src={pullRequest.avatar_url}
+        alt={pullRequest.login}
         class="w-10 h-10 rounded-full"
       />
       <Typography>{pullRequest.title}</Typography>

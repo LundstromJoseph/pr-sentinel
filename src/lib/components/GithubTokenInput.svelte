@@ -41,10 +41,12 @@
 
   async function saveToken() {
     tokenStatus = "loading";
-    await invoke("save_token", { token }).catch((e) => {
-      console.error(e);
-      tokenStatus = "unverified";
-    });
+    await invoke("save_token", { token, username: verifiedUsername }).catch(
+      (e) => {
+        console.error(e);
+        tokenStatus = "unverified";
+      }
+    );
     tokenStatus = "saved";
   }
 </script>

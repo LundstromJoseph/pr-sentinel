@@ -1,93 +1,102 @@
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GithubResponse {
-    pub total_count: u64,
-    pub items: Vec<PullRequestItem>,
-}
-
-fn default_repo_url() -> String {
-    "".to_string()
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PullRequestItem {
-    pub id: u64,
-    pub title: String,
-    #[serde(default = "default_repo_url")]
-    pub repository_url: String,
-    pub user: PullRequestItemUser,
-    pub url: String,
-    pub created_at: String,
-    pub updated_at: String,
-    pub pull_request: PullRequestItemPullRequest,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PullRequestItemPullRequest {
-    pub html_url: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PullRequestItemUser {
-    pub login: String,
-    pub avatar_url: String,
-}
+use octocrab::{
+    models::{issues::Issue, pulls::Review, Author, SimpleUser},
+    Octocrab, Page,
+};
+use serde::Deserialize;
 
 pub struct GithubClient {
-    client: Client,
-    token: String,
+    client: Octocrab,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct User {
-    pub login: String,
+pub struct GithubPRWithReviews {
+    pub pr: Issue,
+    pub reviews: Vec<Review>,
+    pub reviewers: GithubPRReviewResponse,
+}
+
+#[derive(Deserialize)]
+pub struct GithubPRReviewResponse {
+    pub users: Vec<SimpleUser>,
+    //pub teams: Vec<RequestedTeam>,
 }
 
 impl GithubClient {
     pub fn new(github_token: String) -> GithubClient {
-        let client = Client::new();
-        GithubClient {
-            client,
-            token: github_token,
-        }
+        return GithubClient {
+            client: octocrab::instance()
+                .user_access_token(github_token)
+                .unwrap(),
+        };
     }
 
-    async fn make_request(&self, url: String) -> Result<reqwest::Response, reqwest::Error> {
-        let resp = self
-            .client
-            .get(url)
-            .header("Authorization", format!("Bearer {}", self.token))
-            .header("Accept", "application/vnd.github.v3+json")
-            .header("X-GitHub-Api-Version", "2022-11-28")
-            .header("User-Agent", "pr-sentinel")
-            .send() // This actually sends the request
-            .await?; // Handle potential errors
+    pub async fn get_user(&self) -> Result<Author, Box<dyn std::error::Error + Send + Sync>> {
+        let user = self.client.current().user().await?;
 
-        Ok(resp)
-    }
-
-    pub async fn get_user(&self) -> Result<User, Box<dyn std::error::Error + Send + Sync>> {
-        let url = format!("https://api.github.com/user");
-        let resp = self.make_request(url).await?;
-        let user: User = resp.json::<User>().await?;
         Ok(user)
     }
 
     pub async fn search_pull_requests(
         &self,
         query: String,
-    ) -> Result<GithubResponse, Box<dyn std::error::Error + Send + Sync>> {
-        let url = format!(
-            "https://api.github.com/search/issues?sort=updated&order=desc&q={}",
-            query
-        );
+    ) -> Result<Vec<GithubPRWithReviews>, Box<dyn std::error::Error + Send + Sync>> {
+        let mut github_with_reviews = Vec::new();
 
-        let resp = self.make_request(url).await?;
+        let github_response = self
+            .client
+            .search()
+            .issues_and_pull_requests(&query)
+            .sort("updated")
+            .order("desc")
+            .per_page(30)
+            .send()
+            .await
+            .unwrap_or_else(|e| {
+                eprintln!("Error searching pull requests: {}", e);
+                Page::default()
+            });
 
-        let github_response: GithubResponse = resp.json::<GithubResponse>().await?;
+        for (index, issue) in github_response.items.iter().enumerate() {
+            println!(
+                "Fetching details for PR {} out of {}",
+                index,
+                github_response.items.len()
+            );
+            let repository_url = issue.repository_url.to_string();
 
-        Ok(github_response)
+            let owner = repository_url.split("/").nth(4).unwrap();
+            let repo = repository_url.split("/").nth(5).unwrap();
+
+            let pr_number = issue.number;
+
+            let reviewers: GithubPRReviewResponse = self
+                .client
+                .get(
+                    &format!("/repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers"),
+                    None::<&()>,
+                )
+                .await
+                .unwrap();
+
+            let reviews = self
+                .client
+                .pulls(owner.to_string(), repo.to_string())
+                .list_reviews(issue.number)
+                .send()
+                .await
+                .unwrap_or_else(|e| {
+                    eprintln!("Error listing reviews: {}", e);
+                    Page::default()
+                });
+
+            github_with_reviews.push(GithubPRWithReviews {
+                pr: issue.clone(),
+                reviews: reviews.items.clone(),
+                reviewers: reviewers,
+            });
+        }
+
+        println!("Done fetching PRs");
+
+        Ok(github_with_reviews)
     }
 }

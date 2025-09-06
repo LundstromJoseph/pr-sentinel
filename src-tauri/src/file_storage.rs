@@ -1,17 +1,36 @@
+use serde::Deserialize;
 use tauri::{Listener, Manager};
 
 use crate::{
-    app_state::{AppConfig, AppData},
+    app_data::{AppConfig, AppData},
+    app_data_v1::{AppConfigV1, AppDataV1},
+    app_data_v2::{convert_config_to_v2, convert_data_to_v2},
     event_names::{AppConfigUpdatedPayload, AppDataUpdatedPayload, EventNames},
-    AppState,
+    AppState, PullRequestsData,
 };
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
+
+fn default_version() -> u8 {
+    1
+}
+
+#[derive(Deserialize)]
+pub struct VersionOnly {
+    #[serde(default = "default_version")]
+    pub version: u8,
+}
+
+const FOLDER_NAME: &str = if cfg!(dev) {
+    ".pr_sentinel_dev"
+} else {
+    ".pr_sentinel"
+};
 
 fn get_config_path() -> PathBuf {
     let config_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Could not find home directory"))
         .unwrap()
-        .join(".pr_sentinel");
+        .join(FOLDER_NAME);
 
     config_dir.join("config.json")
 }
@@ -20,7 +39,7 @@ fn get_data_path() -> PathBuf {
     let config_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Could not find home directory"))
         .unwrap()
-        .join(".pr_sentinel");
+        .join(FOLDER_NAME);
 
     config_dir.join("data.json")
 }
@@ -50,29 +69,56 @@ pub async fn load_config() -> Result<AppConfig, String> {
     if !config_path.exists() {
         eprintln!("Config path does not exist");
         return Ok(AppConfig {
+            version: 2,
             github_token: None,
-            filters: Vec::new(),
+            username: None,
         });
     }
 
     let content = std::fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-    let mut config: AppConfig = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    config
-        .filters
-        .sort_by_key(|r| r.fractional_index.to_string());
-    Ok(config)
+
+    let version_only: VersionOnly = serde_json::from_str(&content).unwrap();
+
+    if version_only.version == 1 {
+        let config_v1: AppConfigV1 = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        let config_v2 = convert_config_to_v2(config_v1).await;
+        save_config(config_v2.clone()).await;
+        return Ok(config_v2);
+    } else if version_only.version == 2 {
+        let config_v2: AppConfig = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        return Ok(config_v2);
+    } else {
+        return Err("Unsupported config version".to_string());
+    }
 }
 
 pub async fn load_data() -> Result<AppData, String> {
     let data_path = get_data_path();
     if !data_path.exists() {
         return Ok(AppData {
-            pull_requests: HashMap::new(),
+            version: 2,
+            pull_requests: PullRequestsData {
+                last_updated: 0,
+                pull_requests: Vec::new(),
+            },
         });
     }
+
     let content = std::fs::read_to_string(data_path).map_err(|e| e.to_string())?;
-    let data: AppData = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    Ok(data)
+
+    let version_only: VersionOnly = serde_json::from_str(&content).unwrap();
+
+    if version_only.version == 1 {
+        let data_v1: AppDataV1 = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        let data_v2 = convert_data_to_v2(data_v1);
+        save_data(data_v2.clone()).await;
+        return Ok(data_v2);
+    } else if version_only.version == 2 {
+        let data_v2: AppData = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        return Ok(data_v2);
+    } else {
+        return Err("Unsupported data version".to_string());
+    }
 }
 
 pub async fn load_state(app_handle: tauri::AppHandle) {
@@ -82,7 +128,7 @@ pub async fn load_state(app_handle: tauri::AppHandle) {
         let state = app_handle.state::<AppState>();
         state.data.lock().await.pull_requests = data.pull_requests;
         state.config.lock().await.github_token = config.github_token;
-        state.config.lock().await.filters = config.filters;
+        state.config.lock().await.username = config.username;
     }
 }
 

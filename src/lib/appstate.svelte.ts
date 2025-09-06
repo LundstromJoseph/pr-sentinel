@@ -9,7 +9,7 @@ export async function createState() {
 
   const data: AppData = config.github_token
     ? ((await invoke("get_data")) as AppData)
-    : { pull_requests: {} };
+    : { pull_requests: { last_updated: 0, pull_requests: [] } };
 
   let state = $state({
     config,

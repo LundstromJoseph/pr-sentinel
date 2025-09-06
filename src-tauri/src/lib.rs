@@ -1,4 +1,7 @@
 // Import our custom modules
+mod app_data;
+mod app_data_v1;
+mod app_data_v2;
 mod app_state;
 mod event_names;
 mod file_storage;
@@ -6,7 +9,8 @@ mod github_service;
 mod notifications;
 mod polling;
 
-pub use app_state::{AppConfig, AppState};
+pub use app_data::{AppConfig, AppData, PullRequestItem, PullRequestsData};
+pub use app_state::AppState;
 pub use file_storage::{load_config, load_data};
 use tauri_plugin_autostart::MacosLauncher;
 
@@ -33,10 +37,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             app_state::get_config,
             app_state::get_data,
-            app_state::add_filter,
-            app_state::update_filter,
-            app_state::remove_filter,
-            app_state::reorder_filter,
             verify_token,
             app_state::save_token,
             polling::refresh,

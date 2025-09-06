@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    pull_ping_lib::run()
+    pr_sentinel_lib::run()
 }
