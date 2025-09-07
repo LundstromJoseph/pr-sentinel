@@ -81,6 +81,7 @@ pub async fn load_config() -> Result<AppConfig, String> {
             version: 2,
             github_token: None,
             username: None,
+            repo_config: Vec::new(),
         });
     }
 
@@ -88,13 +89,17 @@ pub async fn load_config() -> Result<AppConfig, String> {
 
     let version_only: VersionOnly = serde_json::from_str(&content).unwrap();
 
+    crate::log::info(&format!("Config version: {:?}", version_only.version));
+
     if version_only.version == 1 {
         let config_v1: AppConfigV1 = serde_json::from_str(&content).map_err(|e| e.to_string())?;
         let config_v2 = convert_config_to_v2(config_v1).await;
+        crate::log::info(&format!("Config version 2: {:?}", config_v2));
         save_config(config_v2.clone()).await;
         return Ok(config_v2);
     } else if version_only.version == 2 {
         let config_v2: AppConfig = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        crate::log::info(&format!("Config version 2: {:?}", config_v2));
         return Ok(config_v2);
     } else {
         return Err("Unsupported config version".to_string());
@@ -135,9 +140,8 @@ pub async fn load_state(app_handle: tauri::AppHandle) {
     let data = load_data().await.expect("Failed to load data");
     {
         let state = app_handle.state::<AppState>();
-        state.data.lock().await.pull_requests = data.pull_requests;
-        state.config.lock().await.github_token = config.github_token;
-        state.config.lock().await.username = config.username;
+        *state.data.lock().await = data;
+        *state.config.lock().await = config;
     }
 }
 

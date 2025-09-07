@@ -14,9 +14,11 @@ use crate::app_data::AppData;
 use crate::app_data::PullRequestCategory;
 use crate::app_data::PullRequestItem;
 use crate::app_data::PullRequestsData;
+use crate::app_data_v2::RepoConfigV2;
 use crate::event_names::AppConfigUpdatedPayload;
 use crate::event_names::AppDataUpdatedPayload;
 use crate::event_names::{EventNames, FilterDataUpdatedPayload};
+use crate::github_service::get_owner_and_repo;
 use crate::github_service::GithubPRWithReviews;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,6 +40,7 @@ impl AppState {
                 version: 2,
                 github_token: None,
                 username: None,
+                repo_config: Vec::new(),
             })),
             data: Arc::new(Mutex::new(AppData {
                 version: 2,
@@ -102,16 +105,16 @@ fn get_category_from_reviews(
         })
         .collect();
 
-    let needed_approvals = if pr_with_reviews
-        .pr
-        .repository_url
-        .to_string()
-        .contains("web-app")
-    {
-        2
-    } else {
-        1
-    };
+    let (owner, repo) = get_owner_and_repo(pr_with_reviews.pr.repository_url.to_string());
+
+    let pr_repo_name = format!("{}/{}", owner, repo);
+
+    let needed_approvals = config
+        .repo_config
+        .iter()
+        .find(|r| r.repo_name == pr_repo_name)
+        .map(|f| f.needed_approvals)
+        .unwrap_or(1);
 
     let pr_is_mine =
         pr_with_reviews.pr.user.login == config.username.clone().unwrap_or("".to_string());
@@ -206,6 +209,28 @@ pub async fn new_pull_request_response(
         data.pull_requests = new_pr_data.clone();
     }
 
+    let all_repos = new_pr_data
+        .pull_requests
+        .iter()
+        .map(|r| get_owner_and_repo(r.repository_url.clone()))
+        .map(|(owner, repo)| format!("{}/{}", owner, repo))
+        .collect::<Vec<String>>();
+
+    for repo in all_repos {
+        let repo_config = config
+            .repo_config
+            .iter()
+            .find(|r| r.repo_name == repo)
+            .cloned();
+        if repo_config.is_none() {
+            save_repo_config(repo, 1, app_handle.clone())
+                .await
+                .unwrap_or_else(|e| {
+                    crate::log::error(&format!("Failed to save repo config: {}", e));
+                });
+        }
+    }
+
     let payload = FilterDataUpdatedPayload {
         new_data: new_pr_data.clone(),
         old_data: old_pr_data.clone(),
@@ -234,6 +259,7 @@ pub async fn get_config(state: tauri::State<'_, AppState>) -> Result<AppConfig, 
         version: config.version,
         username: config.username.clone(),
         github_token: config.github_token.clone(),
+        repo_config: config.repo_config.clone(),
     })
 }
 
@@ -241,6 +267,43 @@ pub async fn get_config(state: tauri::State<'_, AppState>) -> Result<AppConfig, 
 pub async fn get_data(state: tauri::State<'_, AppState>) -> Result<AppData, String> {
     let data = state.data.lock().await;
     Ok(data.clone())
+}
+
+#[tauri::command]
+pub async fn save_repo_config(
+    repo_name: String,
+    needed_approvals: usize,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    let state = app_handle.state::<AppState>();
+    {
+        let mut config = state.config.lock().await;
+
+        config.repo_config = config
+            .repo_config
+            .iter()
+            .filter(|r| r.repo_name != repo_name)
+            .cloned()
+            .collect();
+
+        config.repo_config.push(RepoConfigV2 {
+            repo_name,
+            needed_approvals,
+        });
+    }
+
+    app_handle
+        .emit(
+            EventNames::APP_CONFIG_UPDATED,
+            AppConfigUpdatedPayload {
+                config: state.config.lock().await.clone(),
+            },
+        )
+        .unwrap_or_else(|e| {
+            crate::log::error(&format!("Failed to emit app data updated event: {}", e));
+        });
+
+    Ok(())
 }
 
 #[tauri::command]

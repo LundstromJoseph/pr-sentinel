@@ -45,13 +45,17 @@ impl GithubClient {
         &self,
         query: String,
     ) -> Result<Vec<GithubPRWithReviews>, String> {
+        crate::log::info("Fetching PRs");
+
+        let per_page = if cfg!(dev) { 30 } else { 30 };
+
         let github_response = self
             .client
             .search()
             .issues_and_pull_requests(&query)
             .sort("updated")
             .order("desc")
-            .per_page(30)
+            .per_page(per_page)
             .send()
             .await;
 
@@ -65,16 +69,10 @@ impl GithubClient {
 
         let mut github_with_reviews = Vec::new();
 
-        for (index, issue) in ok_response.items.iter().enumerate() {
-            crate::log::info(&format!(
-                "Fetching details for PR {} out of {}",
-                index + 1,
-                ok_response.items.len()
-            ));
+        for issue in ok_response.items.iter() {
             let repository_url = issue.repository_url.to_string();
 
-            let owner = repository_url.split("/").nth(4).unwrap();
-            let repo = repository_url.split("/").nth(5).unwrap();
+            let (owner, repo) = get_owner_and_repo(repository_url);
 
             let pr_number = issue.number;
 
@@ -109,4 +107,10 @@ impl GithubClient {
 
         Ok(github_with_reviews)
     }
+}
+
+pub fn get_owner_and_repo(repository_url: String) -> (String, String) {
+    let owner = repository_url.split("/").nth(4).unwrap();
+    let repo = repository_url.split("/").nth(5).unwrap();
+    (owner.to_string(), repo.to_string())
 }

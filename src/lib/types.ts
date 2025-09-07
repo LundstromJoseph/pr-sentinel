@@ -1,6 +1,12 @@
 export type AppConfig = {
   github_token: string;
   username: string;
+  repo_config: RepoConfig[];
+};
+
+export type RepoConfig = {
+  repo_name: string;
+  needed_approvals: number;
 };
 
 export type AppData = {

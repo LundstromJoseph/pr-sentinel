@@ -9,7 +9,7 @@
   let { data } = $props();
 
   onMount(() => {
-    const listener = listen<{ config: AppConfig }>(
+    const configListener = listen<{ config: AppConfig }>(
       "app-config-updated",
       (event) => {
         data.state.then((state) => {
@@ -18,17 +18,20 @@
       }
     );
 
-    const listener2 = listen<{ data: AppData }>("app-data-updated", (event) => {
-      data.state.then((state) => {
-        state.data = event.payload.data;
-      });
-    });
+    const dataListener = listen<{ data: AppData }>(
+      "app-data-updated",
+      (event) => {
+        data.state.then((state) => {
+          state.data = event.payload.data;
+        });
+      }
+    );
 
     return () => {
-      listener.then((unlisten) => {
+      configListener.then((unlisten) => {
         unlisten();
       });
-      listener2.then((unlisten) => {
+      dataListener.then((unlisten) => {
         unlisten();
       });
     };

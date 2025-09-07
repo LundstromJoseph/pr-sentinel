@@ -40,6 +40,7 @@ pub fn run() {
             app_state::get_data,
             verify_token,
             app_state::save_token,
+            app_state::save_repo_config,
             polling::refresh,
         ])
         .setup(|app| {

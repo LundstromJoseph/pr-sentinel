@@ -5,11 +5,23 @@ use crate::{
     verify_token,
 };
 
+fn default_repo_config() -> Vec<RepoConfigV2> {
+    Vec::new()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfigV2 {
     pub version: u8,
     pub github_token: Option<String>,
     pub username: Option<String>,
+    #[serde(default = "default_repo_config")]
+    pub repo_config: Vec<RepoConfigV2>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoConfigV2 {
+    pub repo_name: String,
+    pub needed_approvals: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,6 +68,7 @@ pub async fn convert_config_to_v2(config: AppConfigV1) -> AppConfigV2 {
             Some(token) => Some(verify_token(token).await.unwrap()),
             None => None,
         },
+        repo_config: Vec::new(),
     };
     config
 }
