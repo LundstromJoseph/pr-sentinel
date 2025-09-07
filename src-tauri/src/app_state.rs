@@ -213,7 +213,7 @@ pub async fn new_pull_request_response(
     app_handle
         .emit(EventNames::FILTER_DATA_UPDATED, payload)
         .unwrap_or_else(|e| {
-            eprintln!("Failed to emit app data updated event: {}", e);
+            crate::log::error(&format!("Failed to emit app data updated event: {}", e));
         });
 
     let new_app_data = app_handle.state::<AppState>().data.lock().await.clone();
@@ -221,7 +221,7 @@ pub async fn new_pull_request_response(
     app_handle
         .emit(EventNames::APP_DATA_UPDATED, payload)
         .unwrap_or_else(|e| {
-            eprintln!("Failed to emit app data updated event: {}", e);
+            crate::log::error(&format!("Failed to emit app data updated event: {}", e));
         });
 }
 
@@ -263,7 +263,7 @@ pub async fn save_token(
             },
         )
         .unwrap_or_else(|e| {
-            eprintln!("Failed to emit app data updated event: {}", e);
+            crate::log::error(&format!("Failed to emit app data updated event: {}", e));
         });
     Ok(())
 }

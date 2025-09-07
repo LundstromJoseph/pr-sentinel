@@ -14,7 +14,8 @@ const POLLING_INTERVAL_SECONDS: u64 = 600;
 pub async fn start_polling_job(app_handle: AppHandle) {
     let mut interval = time::interval(Duration::from_secs(POLLING_INTERVAL_SECONDS));
 
-    println!("Polling interval: {:?}", POLLING_INTERVAL_SECONDS);
+    crate::log::info("Starting polling job");
+    crate::log::info(&format!("Polling interval: {:?}", POLLING_INTERVAL_SECONDS));
 
     loop {
         interval.tick().await;
@@ -34,7 +35,7 @@ pub async fn refresh_all_filters(app_handle: AppHandle) {
     };
 
     let Some(ok_token) = github_token else {
-        eprintln!("No github token found");
+        crate::log::error("No github token found");
         return;
     };
 
@@ -48,7 +49,7 @@ pub async fn refresh_all_filters(app_handle: AppHandle) {
             app_state::new_pull_request_response(app_handle.clone(), response).await;
         }
         Err(e) => {
-            eprintln!("Error polling pull requests: {}", e);
+            crate::log::error(&format!("Error polling pull requests: {}", e));
             // Emit error event
             app_handle
                 .emit(
@@ -58,7 +59,7 @@ pub async fn refresh_all_filters(app_handle: AppHandle) {
                     }),
                 )
                 .unwrap_or_else(|e| {
-                    eprintln!("Failed to emit error event: {}", e);
+                    crate::log::error(&format!("Failed to emit error event: {}", e));
                 });
         }
     }

@@ -80,7 +80,7 @@ fn send_pull_request_notification(
     };
 
     if let Err(e) = notification_result {
-        eprintln!("Failed to send notification: {}", e);
+        crate::log::error(&format!("Failed to send notification: {}", e));
     }
 }
 

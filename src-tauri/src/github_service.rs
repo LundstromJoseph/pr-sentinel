@@ -29,18 +29,22 @@ impl GithubClient {
         };
     }
 
-    pub async fn get_user(&self) -> Result<Author, Box<dyn std::error::Error + Send + Sync>> {
-        let user = self.client.current().user().await?;
+    pub async fn get_user(&self) -> Result<Author, String> {
+        let user = self.client.current().user().await;
 
-        Ok(user)
+        match user {
+            Ok(user) => Ok(user),
+            Err(e) => {
+                crate::log::error(&format!("Error getting user: {}", e));
+                return Err(e.to_string());
+            }
+        }
     }
 
     pub async fn search_pull_requests(
         &self,
         query: String,
-    ) -> Result<Vec<GithubPRWithReviews>, Box<dyn std::error::Error + Send + Sync>> {
-        let mut github_with_reviews = Vec::new();
-
+    ) -> Result<Vec<GithubPRWithReviews>, String> {
         let github_response = self
             .client
             .search()
@@ -49,18 +53,24 @@ impl GithubClient {
             .order("desc")
             .per_page(30)
             .send()
-            .await
-            .unwrap_or_else(|e| {
-                eprintln!("Error searching pull requests: {}", e);
-                Page::default()
-            });
+            .await;
 
-        for (index, issue) in github_response.items.iter().enumerate() {
-            println!(
+        let ok_response = match github_response {
+            Ok(response) => response,
+            Err(e) => {
+                crate::log::error(&format!("Error searching pull requests: {}", e));
+                return Err(e.to_string());
+            }
+        };
+
+        let mut github_with_reviews = Vec::new();
+
+        for (index, issue) in ok_response.items.iter().enumerate() {
+            crate::log::info(&format!(
                 "Fetching details for PR {} out of {}",
-                index,
-                github_response.items.len()
-            );
+                index + 1,
+                ok_response.items.len()
+            ));
             let repository_url = issue.repository_url.to_string();
 
             let owner = repository_url.split("/").nth(4).unwrap();
@@ -84,7 +94,7 @@ impl GithubClient {
                 .send()
                 .await
                 .unwrap_or_else(|e| {
-                    eprintln!("Error listing reviews: {}", e);
+                    crate::log::error(&format!("Error listing reviews, continuing...: {}", e));
                     Page::default()
                 });
 
@@ -95,7 +105,7 @@ impl GithubClient {
             });
         }
 
-        println!("Done fetching PRs");
+        crate::log::info("Done fetching PRs");
 
         Ok(github_with_reviews)
     }

@@ -6,6 +6,7 @@ mod app_state;
 mod event_names;
 mod file_storage;
 mod github_service;
+mod log;
 mod notifications;
 mod polling;
 
@@ -56,12 +57,12 @@ pub async fn init(app_handle: tauri::AppHandle) {
     tauri::async_runtime::spawn(file_storage::load_state(app_handle.clone()))
         .await
         .unwrap_or_else(|e| {
-            eprintln!("Failed to load state: {}", e);
+            crate::log::error(&format!("Failed to load state: {}", e));
         });
     tauri::async_runtime::spawn(polling::start_polling_job(app_handle.clone()))
         .await
         .unwrap_or_else(|e| {
-            eprintln!("Failed to start polling job: {}", e);
+            crate::log::error(&format!("Failed to start polling job: {}", e));
         });
 }
 

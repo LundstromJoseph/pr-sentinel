@@ -26,6 +26,15 @@ const FOLDER_NAME: &str = if cfg!(dev) {
     ".pr_sentinel"
 };
 
+pub fn get_logs_path() -> PathBuf {
+    let logs_dir = dirs::home_dir()
+        .ok_or_else(|| anyhow::anyhow!("Could not find home directory"))
+        .unwrap()
+        .join(FOLDER_NAME);
+
+    logs_dir.join("out.log")
+}
+
 fn get_config_path() -> PathBuf {
     let config_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Could not find home directory"))
@@ -67,7 +76,7 @@ async fn save_config(config: AppConfig) {
 pub async fn load_config() -> Result<AppConfig, String> {
     let config_path = get_config_path();
     if !config_path.exists() {
-        eprintln!("Config path does not exist");
+        crate::log::error("Config path does not exist");
         return Ok(AppConfig {
             version: 2,
             github_token: None,
