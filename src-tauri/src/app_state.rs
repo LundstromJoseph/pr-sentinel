@@ -100,8 +100,22 @@ fn get_category_from_reviews(
         .map(|(key, value)| {
             let is_review_requested = is_user_review_requested(pr_with_reviews, &key);
 
-            let latest_review = get_latest_review(value);
-            (latest_review, is_review_requested)
+            let approved_and_changes_requested_reviews: Vec<Review> = value
+                .iter()
+                .filter(|r| {
+                    r.state == Some(ReviewState::Approved)
+                        || r.state == Some(ReviewState::ChangesRequested)
+                })
+                .cloned()
+                .collect();
+
+            if approved_and_changes_requested_reviews.len() == 0 {
+                return (get_latest_review(value), is_review_requested);
+            }
+            return (
+                get_latest_review(&approved_and_changes_requested_reviews),
+                is_review_requested,
+            );
         })
         .collect();
 
@@ -141,12 +155,9 @@ fn get_category_from_reviews(
         return PullRequestCategory::ReviewRequested;
     };
 
-    let amount_of_reviews = all_latest_reviews
-        .iter()
-        .filter(|r| r.0.user.as_ref().map(|u| u.login.clone()) != Some(username.clone()))
-        .count();
+    let amount_of_reviews = all_latest_reviews.len();
 
-    let someone_else_has_reviewed = amount_of_reviews >= needed_approvals;
+    let pr_is_reviewed = amount_of_reviews >= needed_approvals;
 
     let user_has_reviewed = reviews_by_user.contains_key(&username);
     if user_has_reviewed {
@@ -158,7 +169,7 @@ fn get_category_from_reviews(
         }
     }
 
-    return if someone_else_has_reviewed {
+    return if pr_is_reviewed {
         PullRequestCategory::ReviewRequested
     } else {
         PullRequestCategory::ReviewMissing
