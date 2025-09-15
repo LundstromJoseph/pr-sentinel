@@ -51,7 +51,6 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-
 pub async fn init(app_handle: tauri::AppHandle) {
     file_storage::init_listeners(app_handle.clone());
     notifications::init_listeners(app_handle.clone());

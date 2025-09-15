@@ -67,41 +67,45 @@ impl GithubClient {
             }
         };
 
-        let mut github_with_reviews = Vec::new();
+        use futures::future::join_all;
 
-        for issue in ok_response.items.iter() {
+        let fetch_futures = ok_response.items.iter().map(|issue| {
             let repository_url = issue.repository_url.to_string();
-
             let (owner, repo) = get_owner_and_repo(repository_url);
-
             let pr_number = issue.number;
+            let client = &self.client;
+            let issue = issue.clone();
 
-            let reviewers: GithubPRReviewResponse = self
-                .client
-                .get(
-                    &format!("/repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers"),
-                    None::<&()>,
-                )
-                .await
-                .unwrap();
+            async move {
+                let reviewers_url =
+                    format!("/repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers");
+                let reviewers_future = client.get(&reviewers_url, None::<&()>);
 
-            let reviews = self
-                .client
-                .pulls(owner.to_string(), repo.to_string())
-                .list_reviews(issue.number)
-                .send()
-                .await
-                .unwrap_or_else(|e| {
+                let owner = owner.to_string();
+                let repo = repo.to_string();
+                let pulls = client.pulls(owner, repo);
+                let reviews_future = pulls.list_reviews(pr_number).send();
+
+                let (reviewers, reviews) = tokio::join!(reviewers_future, reviews_future);
+
+                let reviewers = reviewers.unwrap_or_else(|e| {
+                    crate::log::error(&format!("Error listing reviewers, continuing...: {}", e));
+                    GithubPRReviewResponse { users: Vec::new() }
+                });
+                let reviews = reviews.unwrap_or_else(|e| {
                     crate::log::error(&format!("Error listing reviews, continuing...: {}", e));
                     Page::default()
                 });
 
-            github_with_reviews.push(GithubPRWithReviews {
-                pr: issue.clone(),
-                reviews: reviews.items.clone(),
-                reviewers: reviewers,
-            });
-        }
+                GithubPRWithReviews {
+                    pr: issue,
+                    reviews: reviews.items,
+                    reviewers,
+                }
+            }
+        });
+
+        let github_with_reviews = join_all(fetch_futures).await;
 
         crate::log::info("Done fetching PRs");
 

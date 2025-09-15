@@ -3090,12 +3090,13 @@ dependencies = [
 
 [[package]]
 name = "pr_sentinel"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "chrono",
  "dirs 5.0.1",
  "fractional_index",
+ "futures",
  "octocrab",
  "reqwest",
  "serde",
