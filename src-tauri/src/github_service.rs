@@ -47,7 +47,7 @@ impl GithubClient {
     ) -> Result<Vec<GithubPRWithReviews>, String> {
         crate::log::info("Fetching PRs");
 
-        let per_page = if cfg!(dev) { 30 } else { 30 };
+        let per_page = if cfg!(dev) { 50 } else { 50 };
 
         let github_response = self
             .client

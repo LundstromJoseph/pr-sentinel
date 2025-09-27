@@ -9,18 +9,52 @@ use crate::{
 };
 
 const POLLING_INTERVAL_SECONDS: u64 = 600;
+const REFRESH_TIMEOUT_SECONDS: u64 = 30;
 
 // Polling job
 pub async fn start_polling_job(app_handle: AppHandle) {
     let mut interval = time::interval(Duration::from_secs(POLLING_INTERVAL_SECONDS));
 
     crate::log::info("Starting polling job");
-    crate::log::info(&format!("Polling interval: {:?}", POLLING_INTERVAL_SECONDS));
+    crate::log::info(&format!(
+        "Polling interval: {:?}s, timeout: {:?}s",
+        POLLING_INTERVAL_SECONDS, REFRESH_TIMEOUT_SECONDS
+    ));
 
     loop {
+        // Wait for the next interval tick
         interval.tick().await;
 
-        refresh_all_filters(app_handle.clone()).await;
+        let app_handle_clone = app_handle.clone();
+
+        // Create a timeout future for the refresh operation
+        match time::timeout(
+            Duration::from_secs(REFRESH_TIMEOUT_SECONDS),
+            refresh_all_filters(app_handle_clone),
+        )
+        .await
+        {
+            Ok(_) => {
+                // Refresh completed successfully within timeout
+            }
+            Err(_) => {
+                // Timeout occurred
+                crate::log::error(&format!(
+                    "Refresh operation timed out after {}s",
+                    REFRESH_TIMEOUT_SECONDS
+                ));
+                app_handle
+                    .emit(
+                        EventNames::POLLING_ERROR,
+                        serde_json::json!({
+                            "error": format!("Refresh operation timed out after {}s", REFRESH_TIMEOUT_SECONDS)
+                        }),
+                    )
+                    .unwrap_or_else(|e| {
+                        crate::log::error(&format!("Failed to emit error event: {}", e));
+                    });
+            }
+        }
     }
 }
 
