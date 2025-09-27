@@ -9,6 +9,7 @@ mod github_service;
 mod log;
 mod notifications;
 mod polling;
+mod pr_predicates;
 
 pub use app_data::{AppConfig, AppData, PullRequestItem, PullRequestsData};
 pub use app_state::AppState;

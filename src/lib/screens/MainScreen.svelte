@@ -10,13 +10,10 @@
   import PullRequestListScreen from "./PullRequestListScreen.svelte";
   import SettingsScreen from "./SettingsScreen.svelte";
   import { categories } from "$lib/domain/categories";
-  import type { PullRequestItem } from "$lib/types";
 
   type Category = (typeof categories)[number];
 
-  type Screen =
-    | { key: "settings" }
-    | (Category & { pullRequests: PullRequestItem[] });
+  type Screen = { key: "settings" } | Category;
 
   interface Props {
     appState: AppState;
@@ -30,7 +27,7 @@
 
   let categoriesWithPrs = $derived(
     categories.map((category) => ({
-      ...category,
+      category,
       pullRequests: appState.data.pull_requests.pull_requests.filter((pr) =>
         category.prCategories.includes(pr.category)
       ),
@@ -41,6 +38,12 @@
     0: "pl-4",
     1: "pl-6",
   };
+
+  let pullRequests = $derived(
+    categoriesWithPrs.find(
+      (categoryWithPrs) => categoryWithPrs.category.key === screen?.key
+    )?.pullRequests ?? []
+  );
 
   function formatDate(seconds: number) {
     return new Date(seconds * 1000).toLocaleString("sv-SE", {
@@ -66,25 +69,29 @@
     class="flex flex-col overflow-y-auto min-h-0 border-r border-border-default"
   >
     <menu class="flex flex-col">
-      {#each categoriesWithPrs as category}
+      {#each categoriesWithPrs as categoryWithPrs}
         <ListButton
           classes="border-b rounded-none border-border-default flex flex-col flex-start {levelToPadding[
-            category.level
+            categoryWithPrs.category.level
           ]}"
-          onClick={() => (screen = category)}
+          onClick={() => (screen = categoryWithPrs.category)}
         >
           <div class="flex justify-between w-full">
             <Typography
               size={"sm"}
-              color={category.key === screen?.key ? "default" : "subtle"}
+              color={categoryWithPrs.category.key === screen?.key
+                ? "default"
+                : "subtle"}
             >
-              {category.name}
+              {categoryWithPrs.category.name}
             </Typography>
             <Typography
               size={"sm"}
-              color={category.key === screen?.key ? "default" : "subtle"}
+              color={categoryWithPrs.category.key === screen?.key
+                ? "default"
+                : "subtle"}
             >
-              {category.pullRequests.length}
+              {categoryWithPrs.pullRequests.length}
             </Typography>
           </div>
         </ListButton>
@@ -112,7 +119,7 @@
     {#if screen?.key === "settings"}
       <SettingsScreen {appState} />
     {:else if screen && "name" in screen}
-      <PullRequestListScreen data={screen.pullRequests} />
+      <PullRequestListScreen data={pullRequests} />
     {:else}
       <div class="flex flex-col gap-2 items-center justify-center h-full">
         <Typography component="h5">Pick a filter to the left</Typography>

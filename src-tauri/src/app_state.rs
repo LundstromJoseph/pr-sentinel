@@ -1,8 +1,5 @@
 use anyhow::Result;
-use octocrab::models::pulls::Review;
-use octocrab::models::pulls::ReviewState;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::Emitter;
 use tauri::Manager;
@@ -20,6 +17,7 @@ use crate::event_names::AppDataUpdatedPayload;
 use crate::event_names::{EventNames, FilterDataUpdatedPayload};
 use crate::github_service::get_owner_and_repo;
 use crate::github_service::GithubPRWithReviews;
+use crate::pr_predicates::PR_CATEGORIES;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GithubFilterUpdate {
@@ -53,127 +51,20 @@ impl AppState {
     }
 }
 
-fn group_by_user(reviews: Vec<Review>) -> HashMap<String, Vec<Review>> {
-    let mut reviews_by_user = HashMap::new();
-    for review in reviews {
-        if review.user.is_none() {
-            continue;
-        }
-        reviews_by_user
-            .entry(review.user.clone().unwrap().login)
-            .or_insert(Vec::new())
-            .push(review);
-    }
-    reviews_by_user
-}
-
-fn get_latest_review(reviews: &Vec<Review>) -> Review {
-    reviews
-        .iter()
-        .max_by_key(|r| r.submitted_at)
-        .unwrap()
-        .clone()
-}
-
-fn is_user_review_requested(pr_with_reviews: &GithubPRWithReviews, username: &String) -> bool {
-    pr_with_reviews
-        .reviewers
-        .users
-        .iter()
-        .any(|r| r.login.clone() == username.clone())
-}
-
-fn review_is(review: &(Review, bool), state: ReviewState) -> bool {
-    if review.1 {
-        return false;
-    }
-    return review.0.state == Some(state);
-}
-
 fn get_category_from_reviews(
     pr_with_reviews: &GithubPRWithReviews,
     config: &AppConfig,
 ) -> PullRequestCategory {
-    let reviews_by_user = group_by_user(pr_with_reviews.reviews.clone());
-    let all_latest_reviews: Vec<(Review, bool)> = reviews_by_user
-        .iter()
-        .map(|(key, value)| {
-            let is_review_requested = is_user_review_requested(pr_with_reviews, &key);
-
-            let approved_and_changes_requested_reviews: Vec<Review> = value
-                .iter()
-                .filter(|r| {
-                    r.state == Some(ReviewState::Approved)
-                        || r.state == Some(ReviewState::ChangesRequested)
-                })
-                .cloned()
-                .collect();
-
-            if approved_and_changes_requested_reviews.len() == 0 {
-                return (get_latest_review(value), is_review_requested);
-            }
-            return (
-                get_latest_review(&approved_and_changes_requested_reviews),
-                is_review_requested,
-            );
-        })
-        .collect();
-
-    let (owner, repo) = get_owner_and_repo(pr_with_reviews.pr.repository_url.to_string());
-
-    let pr_repo_name = format!("{}/{}", owner, repo);
-
-    let needed_approvals = config
-        .repo_config
-        .iter()
-        .find(|r| r.repo_name == pr_repo_name)
-        .map(|f| f.needed_approvals)
-        .unwrap_or(1);
-
-    let pr_is_mine =
-        pr_with_reviews.pr.user.login == config.username.clone().unwrap_or("".to_string());
-
-    if pr_is_mine {
-        if all_latest_reviews
-            .iter()
-            .any(|r| review_is(r, ReviewState::ChangesRequested))
-        {
-            return PullRequestCategory::MineChangesRequested;
-        } else if all_latest_reviews
-            .iter()
-            .filter(|r| review_is(r, ReviewState::Approved))
-            .count()
-            >= needed_approvals
-        {
-            return PullRequestCategory::MineApproved;
-        } else {
-            return PullRequestCategory::MinePending;
+    for category in PR_CATEGORIES.iter() {
+        if (category.predicate)(pr_with_reviews, config) {
+            return category.category.clone();
         }
     }
-
-    let Some(username) = config.username.clone() else {
-        return PullRequestCategory::ReviewRequested;
-    };
-
-    let amount_of_reviews = all_latest_reviews.len();
-
-    let pr_is_reviewed = amount_of_reviews >= needed_approvals;
-
-    let user_has_reviewed = reviews_by_user.contains_key(&username);
-    if user_has_reviewed {
-        let user_latest_review = get_latest_review(&reviews_by_user[&username]);
-        if is_user_review_requested(pr_with_reviews, &username)
-            || user_latest_review.state == Some(ReviewState::Dismissed)
-        {
-            return PullRequestCategory::Rereview;
-        }
-    }
-
-    return if pr_is_reviewed {
-        PullRequestCategory::ReviewRequested
-    } else {
-        PullRequestCategory::ReviewMissing
-    };
+    crate::log::error(&format!(
+        "No category found for PR: {}",
+        pr_with_reviews.pr.id
+    ));
+    return PullRequestCategory::MinePending;
 }
 
 fn map_to_app_data(
@@ -190,6 +81,11 @@ fn map_to_app_data(
         html_url: github_pr_with_reviews.pr.html_url.to_string(),
         created_at: github_pr_with_reviews.pr.created_at.to_rfc3339(),
         updated_at: github_pr_with_reviews.pr.updated_at.to_rfc3339(),
+        is_assigned: github_pr_with_reviews
+            .pr
+            .assignees
+            .iter()
+            .any(|a| a.login == config.username.clone().unwrap_or("".to_string())),
         category: get_category_from_reviews(github_pr_with_reviews, &config),
     }
 }

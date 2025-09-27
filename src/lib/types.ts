@@ -28,6 +28,7 @@ export type PullRequestItem = {
   created_at: string;
   updated_at: string;
   html_url: string;
+  is_assigned: boolean;
   category: PullRequestCategory;
 };
 

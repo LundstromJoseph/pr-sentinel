@@ -46,6 +46,10 @@ pub enum PullRequestCategoryV2 {
     ReviewMissing,
 }
 
+fn default_is_assigned() -> bool {
+    false
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PullRequestItemV2 {
     pub id: u64,
@@ -57,6 +61,8 @@ pub struct PullRequestItemV2 {
     pub created_at: String,
     pub updated_at: String,
     pub html_url: String,
+    #[serde(default = "default_is_assigned")]
+    pub is_assigned: bool,
     pub category: PullRequestCategoryV2,
 }
 
