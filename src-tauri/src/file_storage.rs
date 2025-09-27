@@ -94,12 +94,10 @@ pub async fn load_config() -> Result<AppConfig, String> {
     if version_only.version == 1 {
         let config_v1: AppConfigV1 = serde_json::from_str(&content).map_err(|e| e.to_string())?;
         let config_v2 = convert_config_to_v2(config_v1).await;
-        crate::log::info(&format!("Config version 2: {:?}", config_v2));
         save_config(config_v2.clone()).await;
         return Ok(config_v2);
     } else if version_only.version == 2 {
         let config_v2: AppConfig = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-        crate::log::info(&format!("Config version 2: {:?}", config_v2));
         return Ok(config_v2);
     } else {
         return Err("Unsupported config version".to_string());

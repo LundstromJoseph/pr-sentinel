@@ -1,3 +1,5 @@
+use std::thread;
+
 use crate::{
     app_data::PullRequestCategory,
     event_names::{EventNames, FilterDataUpdatedPayload},
@@ -15,7 +17,7 @@ pub fn init_listeners(app_handle: tauri::AppHandle) {
 }
 
 fn notify_new_pull_requests(payload: FilterDataUpdatedPayload, app_handle: tauri::AppHandle) {
-    let mut prs_new: Vec<PullRequestItem> = Vec::new();
+    let mut prs_missing_review: Vec<PullRequestItem> = Vec::new();
     let mut prs_rereview: Vec<PullRequestItem> = Vec::new();
     let mut prs_approved: Vec<PullRequestItem> = Vec::new();
     let mut prs_changes_requested: Vec<PullRequestItem> = Vec::new();
@@ -29,18 +31,16 @@ fn notify_new_pull_requests(payload: FilterDataUpdatedPayload, app_handle: tauri
             .pull_requests
             .iter()
             .find(|old_pr| old_pr.id == pr.id);
-        if old_pr.is_some() {
-            if old_pr.unwrap().category != pr.category {
-                if pr.category == PullRequestCategory::Rereview {
-                    prs_rereview.push(pr);
-                } else if pr.category == PullRequestCategory::MineApproved {
-                    prs_approved.push(pr);
-                } else if pr.category == PullRequestCategory::MineChangesRequested {
-                    prs_changes_requested.push(pr);
-                }
+        if old_pr.is_none() || old_pr.unwrap().category != pr.category {
+            if pr.category == PullRequestCategory::Rereview {
+                prs_rereview.push(pr);
+            } else if pr.category == PullRequestCategory::MineApproved {
+                prs_approved.push(pr);
+            } else if pr.category == PullRequestCategory::MineChangesRequested {
+                prs_changes_requested.push(pr);
+            } else if pr.category == PullRequestCategory::ReviewMissing {
+                prs_missing_review.push(pr);
             }
-        } else {
-            prs_new.push(pr);
         }
     }
 
@@ -53,8 +53,12 @@ fn notify_new_pull_requests(payload: FilterDataUpdatedPayload, app_handle: tauri
     if prs_changes_requested.len() > 0 {
         send_pull_request_notification(prs_changes_requested, app_handle.clone(), "PRs rejected");
     }
-    if prs_new.len() > 0 {
-        send_pull_request_notification(prs_new, app_handle.clone(), "New PRs");
+    if prs_missing_review.len() > 0 {
+        send_pull_request_notification(
+            prs_missing_review,
+            app_handle.clone(),
+            "PRs missing review",
+        );
     }
 }
 
@@ -63,25 +67,60 @@ fn send_pull_request_notification(
     app_handle: tauri::AppHandle,
     title: &str,
 ) {
-    let notification_result = if pull_requests.len() > 3 {
-        // Send summary notification for many PRs
-        app_handle
-            .notification()
-            .builder()
-            .title(&format!("{} {}", pull_requests.len(), title))
-            .show()
+    let body = if pull_requests.len() > 3 {
+        format!("{} {}", &pull_requests.len(), title)
     } else {
-        app_handle
-            .notification()
-            .builder()
-            .title(&format!("- {} -", title))
-            .body(&format!("{}", format_titles(&pull_requests)))
-            .show()
+        format!("{}", format_titles(&pull_requests))
     };
 
-    if let Err(e) = notification_result {
-        crate::log::error(&format!("Failed to send notification: {}", e));
+    let formatted_title = format!("- {} -", title);
+
+    if cfg!(target_os = "macos") {
+        send_notification_macos(app_handle.clone(), formatted_title, body);
+    } else if cfg!(target_os = "linux") {
+        send_notification_linux(formatted_title, body);
     }
+}
+
+fn send_notification_macos(app_handle: tauri::AppHandle, title: String, body: String) {
+    let result = app_handle
+        .notification()
+        .builder()
+        .title(&title)
+        .body(&body)
+        .auto_cancel()
+        .show();
+
+    match result {
+        Ok(_) => crate::log::info(&format!("Notification sent: {}", &title)),
+        _ => {
+            crate::log::error(&format!("Failed to send notification: {}", &title));
+        }
+    };
+}
+
+fn send_notification_linux(title: String, body: String) {
+    thread::spawn(move || {
+        let result = std::process::Command::new("notify-send")
+            .args([
+                "--app-name=pr-sentinel",
+                "--urgency=normal",
+                "--expire-time=5000",
+                "--hint=string:sound-name:message-new-instant",
+                &title,
+                &body,
+            ])
+            .output();
+
+        match result {
+            Ok(output) if output.status.success() => {
+                crate::log::error(&format!("Failed to send notification: {}", title));
+            }
+            _ => {
+                crate::log::error(&format!("Failed to send notification: {}", title));
+            }
+        }
+    });
 }
 
 fn format_titles(pull_requests: &Vec<PullRequestItem>) -> String {
@@ -90,5 +129,5 @@ fn format_titles(pull_requests: &Vec<PullRequestItem>) -> String {
         .take(3)
         .map(|pr| pr.title.as_str())
         .collect();
-    return titles.join("\n");
+    return titles.join("\n\n");
 }
