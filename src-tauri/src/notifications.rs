@@ -31,7 +31,7 @@ fn notify_new_pull_requests(payload: FilterDataUpdatedPayload, app_handle: tauri
             .pull_requests
             .iter()
             .find(|old_pr| old_pr.id == pr.id);
-        if old_pr.is_none() || old_pr.unwrap().category != pr.category {
+        if old_pr.map_or(true, |existing_pr| existing_pr.category != pr.category) {
             if pr.category == PullRequestCategory::Rereview {
                 prs_rereview.push(pr);
             } else if pr.category == PullRequestCategory::MineApproved {
