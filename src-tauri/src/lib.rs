@@ -42,6 +42,7 @@ pub fn run() {
             app_state::save_token,
             app_state::save_repo_config,
             polling::refresh,
+            notifications::test_notification,
         ])
         .setup(|app| {
             let app_handle = app.handle();

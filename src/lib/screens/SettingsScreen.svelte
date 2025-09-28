@@ -5,12 +5,19 @@
   import ApprovalCountRow from "$lib/screens/ApprovalCountRow.svelte";
   import Typography from "$lib/components/Typography.svelte";
   import { enable, isEnabled, disable } from "@tauri-apps/plugin-autostart";
+  import Button from "$lib/components/Button.svelte";
+  import { invoke } from "@tauri-apps/api/core";
 
   interface Props {
     appState: AppState;
   }
 
   let isRunOnStartupEnabled = $state(false);
+
+  let notificationTestStatus = $state({
+    loading: false,
+    status: "",
+  });
 
   $effect(() => {
     isEnabled().then((value) => {
@@ -19,6 +26,14 @@
   });
 
   let { appState }: Props = $props();
+
+  let testNotification = () => {
+    notificationTestStatus.loading = true;
+    invoke<{ status: string }>("test_notification").then((e) => {
+      notificationTestStatus.status = e.status;
+      notificationTestStatus.loading = false;
+    });
+  };
 
   let repoConfigs = $derived.by(() => {
     const newList = [...appState.config.repo_config];
@@ -57,14 +72,26 @@
   <GithubTokenInput {appState} />
   <section class="p-2 grid gap-2">
     <Typography component="h5">Run on startup</Typography>
-    <div class="grid gap-2 p-2">
+    <div class="grid gap-2 p-4">
       <Checkbox bind:value={runOnStartup.value} label="Run on startup" />
+    </div>
+  </section>
+  <section class="p-2 grid gap-2">
+    <Typography component="h5">Test Notification</Typography>
+    <div class="grid gap-2 p-4">
+      <Button
+        onClick={testNotification}
+        enabled={!notificationTestStatus.loading}
+      >
+        Test notification
+      </Button>
+      <Typography>{notificationTestStatus.status}</Typography>
     </div>
   </section>
   <section class="p-2 grid gap-2">
     <Typography component="h5">Approval counts</Typography>
     <div
-      class="grid grid-cols-[fit-content(50%)_fit-content(50%)] p-2 gap-6 items-center"
+      class="grid grid-cols-[fit-content(50%)_fit-content(50%)] p-4 gap-6 items-center"
     >
       {#each repoConfigs as repoConfig}
         <ApprovalCountRow

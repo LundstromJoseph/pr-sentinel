@@ -1,10 +1,9 @@
-use std::thread;
-
 use crate::{
     app_data::PullRequestCategory,
     event_names::{EventNames, FilterDataUpdatedPayload},
     PullRequestItem,
 };
+use serde::{Deserialize, Serialize};
 use tauri::Listener;
 use tauri_plugin_notification::NotificationExt;
 
@@ -75,52 +74,70 @@ fn send_pull_request_notification(
 
     let formatted_title = format!("- {} -", title);
 
-    if cfg!(target_os = "macos") {
-        send_notification_macos(app_handle.clone(), formatted_title, body);
-    } else if cfg!(target_os = "linux") {
-        send_notification_linux(formatted_title, body);
+    let result = send_notification(app_handle.clone(), &formatted_title, &body);
+    match result {
+        Ok(s) => crate::log::info(&format!("Notification sent: {}", s)),
+        Err(e) => crate::log::error(&format!("Failed to send notification: {}", e)),
     }
 }
 
-fn send_notification_macos(app_handle: tauri::AppHandle, title: String, body: String) {
-    let result = app_handle
-        .notification()
-        .builder()
-        .title(&title)
-        .body(&body)
-        .auto_cancel()
-        .show();
-
-    match result {
-        Ok(_) => crate::log::info(&format!("Notification sent: {}", &title)),
-        _ => {
-            crate::log::error(&format!("Failed to send notification: {}", &title));
-        }
+fn send_notification(
+    app_handle: tauri::AppHandle,
+    title: &str,
+    body: &str,
+) -> Result<String, String> {
+    return if cfg!(target_os = "linux") {
+        send_notification_linux(title, body)
+    } else {
+        send_notification_macos(app_handle.clone(), title, body)
     };
 }
 
-fn send_notification_linux(title: String, body: String) {
-    thread::spawn(move || {
-        let result = std::process::Command::new("notify-send")
-            .args([
-                "--app-name=pr-sentinel",
-                "--urgency=normal",
-                "--expire-time=5000",
-                "--hint=string:sound-name:message-new-instant",
-                &title,
-                &body,
-            ])
-            .output();
+fn send_notification_macos(
+    app_handle: tauri::AppHandle,
+    title: &str,
+    body: &str,
+) -> Result<String, String> {
+    let result = app_handle
+        .notification()
+        .builder()
+        .title(title)
+        .body(body)
+        .auto_cancel()
+        .show();
 
-        match result {
-            Ok(output) if output.status.success() => {
-                crate::log::error(&format!("Failed to send notification: {}", title));
-            }
-            _ => {
-                crate::log::error(&format!("Failed to send notification: {}", title));
-            }
+    return match result {
+        Ok(_) => Ok("Successfully sent notification".to_string()),
+        Err(e) => Err("Failed to send notification".to_string() + &e.to_string()),
+    };
+}
+
+fn send_notification_linux(title: &str, body: &str) -> Result<String, String> {
+    let result = std::process::Command::new("notify-send")
+        .args([
+            "--app-name=pr-sentinel",
+            "--urgency=normal",
+            "--expire-time=5000",
+            "--hint=string:sound-name:message-new-instant",
+            &title,
+            &body,
+        ])
+        .output();
+
+    match result {
+        Ok(output) if output.status.success() => {
+            return Ok("Successfully sent notification with status: ".to_string()
+                + &output.status.to_string());
         }
-    });
+        Ok(o) => {
+            return Err(
+                "Failed to send notification with status: ".to_string() + &o.status.to_string()
+            );
+        }
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    }
 }
 
 fn format_titles(pull_requests: &Vec<PullRequestItem>) -> String {
@@ -130,4 +147,23 @@ fn format_titles(pull_requests: &Vec<PullRequestItem>) -> String {
         .map(|pr| pr.title.as_str())
         .collect();
     return titles.join("\n\n");
+}
+
+#[tauri::command]
+pub fn test_notification(app_handle: tauri::AppHandle) -> Result<NotificationResult, ()> {
+    let result = send_notification(
+        app_handle.clone(),
+        "Test Notification",
+        "This is a test notification",
+    );
+
+    return match result {
+        Ok(s) => Ok(NotificationResult { status: s }),
+        Err(e) => Ok(NotificationResult { status: e }),
+    };
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationResult {
+    pub status: String,
 }
