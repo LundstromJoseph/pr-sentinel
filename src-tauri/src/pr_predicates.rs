@@ -164,7 +164,7 @@ fn is_mine(pr_with_reviews: &GithubPRWithReviews, config: &AppConfig) -> bool {
 }
 
 fn pr_repo_name(pr_with_reviews: &GithubPRWithReviews) -> String {
-    let (owner, repo) = get_owner_and_repo(pr_with_reviews.pr.repository_url.to_string());
+    let (owner, repo) = get_owner_and_repo(&pr_with_reviews.pr.repository_url.to_string());
 
     return format!("{}/{}", owner, repo);
 }

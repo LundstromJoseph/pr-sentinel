@@ -71,10 +71,9 @@ impl GithubClient {
 
         let fetch_futures = ok_response.items.iter().map(|issue| {
             let repository_url = issue.repository_url.to_string();
-            let (owner, repo) = get_owner_and_repo(repository_url);
+            let (owner, repo) = get_owner_and_repo(&repository_url);
             let pr_number = issue.number;
             let client = &self.client;
-            let issue = issue.clone();
 
             async move {
                 let reviewers_url =
@@ -98,7 +97,7 @@ impl GithubClient {
                 });
 
                 GithubPRWithReviews {
-                    pr: issue,
+                    pr: issue.clone(),
                     reviews: reviews.items,
                     reviewers,
                 }
@@ -113,7 +112,7 @@ impl GithubClient {
     }
 }
 
-pub fn get_owner_and_repo(repository_url: String) -> (String, String) {
+pub fn get_owner_and_repo(repository_url: &str) -> (String, String) {
     let owner = repository_url.split("/").nth(4).unwrap();
     let repo = repository_url.split("/").nth(5).unwrap();
     (owner.to_string(), repo.to_string())

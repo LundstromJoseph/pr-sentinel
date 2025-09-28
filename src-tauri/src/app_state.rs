@@ -91,8 +91,8 @@ fn map_to_app_data(
 }
 
 pub async fn new_pull_request_response(
-    app_handle: tauri::AppHandle,
-    response: Vec<GithubPRWithReviews>,
+    app_handle: &tauri::AppHandle,
+    response: &Vec<GithubPRWithReviews>,
 ) {
     let state = app_handle.state::<AppState>();
     let config = app_handle.state::<AppState>().config.lock().await.clone();
@@ -119,7 +119,7 @@ pub async fn new_pull_request_response(
     let all_repos = new_pr_data
         .pull_requests
         .iter()
-        .map(|r| get_owner_and_repo(r.repository_url.clone()))
+        .map(|r| get_owner_and_repo(&r.repository_url))
         .map(|(owner, repo)| format!("{}/{}", owner, repo))
         .collect::<Vec<String>>();
 

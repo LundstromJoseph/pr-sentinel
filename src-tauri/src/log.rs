@@ -21,17 +21,50 @@ fn log(message: &str, level: &str) {
     log_to_file(formatted_message);
 }
 
+fn ensure_log_dir(path: &std::path::Path) -> std::io::Result<()> {
+    match path.parent() {
+        Some(parent) => {
+            return std::fs::create_dir_all(parent);
+        }
+        None => return Ok(()),
+    }
+}
+
+fn open_log_file(file_path: &std::path::Path) -> Result<File, String> {
+    if !file_path.exists() {
+        if let Err(e) = ensure_log_dir(&file_path) {
+            return Err(format!("Could not create log directory: {}", e));
+        }
+
+        if let Err(e) = std::fs::write(&file_path, "") {
+            return Err(format!("Could not create log file: {}", e));
+        }
+    }
+
+    match File::options().append(true).open(file_path) {
+        Ok(file) => {
+            return Ok(file);
+        }
+        Err(e) => {
+            return Err(format!("Could not open log file: {}", e));
+        }
+    }
+}
+
 fn log_to_file(message: &str) {
     let file_path = file_storage::get_logs_path();
 
-    if !file_path.exists() {
-        let parent_dir = file_path.parent().unwrap();
-        std::fs::create_dir_all(parent_dir).unwrap();
-        std::fs::write(&file_path, "").unwrap();
+    match open_log_file(&file_path) {
+        Ok(mut file) => {
+            let result = writeln!(file, "{}", message);
+            if let Err(e) = result {
+                log_to_console(&format!("Failed to write log: {}", e));
+            }
+        }
+        Err(e) => {
+            log_to_console(&e);
+        }
     }
-
-    let mut f = File::options().append(true).open(file_path).unwrap();
-    writeln!(&mut f, "{}", message).unwrap_or_else(|_| log_to_console(message));
 }
 
 fn log_to_console(message: &str) {

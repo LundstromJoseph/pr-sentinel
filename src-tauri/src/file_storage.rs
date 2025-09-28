@@ -93,7 +93,7 @@ pub async fn load_config() -> Result<AppConfig, String> {
 
     if version_only.version == 1 {
         let config_v1: AppConfigV1 = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-        let config_v2 = convert_config_to_v2(config_v1).await;
+        let config_v2 = convert_config_to_v2(&config_v1).await;
         save_config(config_v2.clone()).await;
         return Ok(config_v2);
     } else if version_only.version == 2 {

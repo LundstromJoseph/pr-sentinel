@@ -80,7 +80,7 @@ pub async fn refresh_all_filters(app_handle: AppHandle) {
         .await
     {
         Ok(response) => {
-            app_state::new_pull_request_response(app_handle.clone(), response).await;
+            app_state::new_pull_request_response(&app_handle, &response).await;
         }
         Err(e) => {
             crate::log::error(&format!("Error polling pull requests: {}", e));

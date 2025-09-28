@@ -66,12 +66,12 @@ pub struct PullRequestItemV2 {
     pub category: PullRequestCategoryV2,
 }
 
-pub async fn convert_config_to_v2(config: AppConfigV1) -> AppConfigV2 {
+pub async fn convert_config_to_v2(config: &AppConfigV1) -> AppConfigV2 {
     let config = AppConfigV2 {
         version: 2,
         github_token: config.github_token.clone(),
-        username: match config.github_token {
-            Some(token) => Some(verify_token(token).await.unwrap()),
+        username: match &config.github_token {
+            Some(token) => Some(verify_token(token.clone()).await.unwrap()),
             None => None,
         },
         repo_config: Vec::new(),
