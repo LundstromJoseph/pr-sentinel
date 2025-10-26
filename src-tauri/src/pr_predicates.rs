@@ -26,9 +26,17 @@ fn mine_approved(pr_with_reviews: &GithubPRWithReviews, config: &AppConfig) -> b
 
     let all_latest_reviews = latest_reviews(pr_with_reviews);
 
+    let has_requested_changes = all_latest_reviews
+        .iter()
+        .any(|r| review_is(r, ReviewState::ChangesRequested, false));
+
+    if has_requested_changes {
+        return false;
+    }
+
     return all_latest_reviews
         .iter()
-        .filter(|r| review_is(r, ReviewState::Approved))
+        .filter(|r| review_is(r, ReviewState::Approved, true))
         .count()
         >= needed_approvals;
 }
@@ -40,7 +48,7 @@ fn mine_changes_requested(pr_with_reviews: &GithubPRWithReviews, config: &AppCon
     let all_latest_reviews = latest_reviews(pr_with_reviews);
     return all_latest_reviews
         .iter()
-        .any(|r| review_is(r, ReviewState::ChangesRequested));
+        .any(|r| review_is(r, ReviewState::ChangesRequested, true));
 }
 
 fn re_review(pr_with_reviews: &GithubPRWithReviews, config: &AppConfig) -> bool {
@@ -179,9 +187,15 @@ fn needed_approvals(pr_with_reviews: &GithubPRWithReviews, config: &AppConfig) -
         .unwrap_or(1);
 }
 
-fn review_is(review: &(Review, bool), state: ReviewState) -> bool {
-    if review.1 {
+fn review_is(
+    review: &(Review, bool),
+    state: ReviewState,
+    consider_requested_as_stale: bool,
+) -> bool {
+    let is_requested = review.1;
+    let is_correct_state = review.0.state == Some(state);
+    if is_requested && consider_requested_as_stale {
         return false;
     }
-    return review.0.state == Some(state);
+    return is_correct_state;
 }
